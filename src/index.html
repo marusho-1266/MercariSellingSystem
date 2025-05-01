@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <title>メルカリ販売管理システム</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      body {
+        padding: 20px;
+        background-color: #f8f9fa;
+      }
+      .header {
+        margin-bottom: 30px;
+      }
+      .card {
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1 class="text-center">メルカリ販売管理システム</h1>
+      </div>
+      
+      <div class="row">
+        <!-- 商品登録 -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">商品登録</h5>
+            </div>
+            <div class="card-body">
+              <button class="btn btn-primary" onclick="showProductForm()">新規商品登録</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 在庫管理 -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">在庫管理</h5>
+            </div>
+            <div class="card-body">
+              <button class="btn btn-info" onclick="showInventory()">在庫一覧</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row">
+        <!-- 販売管理 -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">販売管理</h5>
+            </div>
+            <div class="card-body">
+              <button class="btn btn-success" onclick="showSales()">販売一覧</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 財務管理 -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">財務管理</h5>
+            </div>
+            <div class="card-body">
+              <button class="btn btn-warning" onclick="showFinance()">財務レポート</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // 各機能のプレースホルダー関数
+      function showProductForm() {
+        google.script.run.withSuccessHandler(function(result) {
+          // 商品登録フォームを表示
+        }).getProductForm();
+      }
+      
+      function showInventory() {
+        google.script.run.withSuccessHandler(function(result) {
+          // 在庫一覧を表示
+        }).getInventoryList();
+      }
+      
+      function showSales() {
+        google.script.run.withSuccessHandler(function(result) {
+          // 販売一覧を表示
+        }).getSalesList();
+      }
+      
+      function showFinance() {
+        google.script.run.withSuccessHandler(function(result) {
+          // 財務レポートを表示
+        }).getFinanceReport();
+      }
+    </script>
+  </body>
+</html> 

@@ -1,0 +1,13 @@
+# Node.js
+node_modules/
+
+# clasp
+.clasp.json
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
