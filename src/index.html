@@ -24,6 +24,58 @@
         <h1 class="text-center">メルカリ販売管理システム</h1>
       </div>
       
+      <!-- ダッシュボードサマリー -->
+      <div class="row" id="dashboardSummaryRow">
+        <div class="col-md-2 mb-3">
+          <div class="card text-white bg-primary h-100">
+            <div class="card-body">
+              <h6 class="card-title">総売上金額</h6>
+              <p class="card-text fs-5" id="summaryTotalSales">-</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2 mb-3">
+          <div class="card text-white bg-success h-100">
+            <div class="card-body">
+              <h6 class="card-title">売上件数</h6>
+              <p class="card-text fs-5" id="summarySalesCount">-</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2 mb-3">
+          <div class="card text-white bg-warning h-100">
+            <div class="card-body">
+              <h6 class="card-title">総利益</h6>
+              <p class="card-text fs-5" id="summaryTotalProfit">-</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2 mb-3">
+          <div class="card text-white bg-info h-100">
+            <div class="card-body">
+              <h6 class="card-title">在庫総数</h6>
+              <p class="card-text fs-5" id="summaryTotalStock">-</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2 mb-3">
+          <div class="card text-white bg-danger h-100">
+            <div class="card-body">
+              <h6 class="card-title">在庫切れ商品数</h6>
+              <p class="card-text fs-5" id="summaryOutOfStockCount">-</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2 mb-3">
+          <div class="card text-white bg-secondary h-100">
+            <div class="card-body">
+              <h6 class="card-title">出品中商品数</h6>
+              <p class="card-text fs-5" id="summaryListedCount">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div class="row">
         <!-- 商品登録 -->
         <div class="col-md-6">
@@ -206,6 +258,20 @@
           // 財務レポートを表示
         }).getFinanceReport();
       }
+
+      window.addEventListener('DOMContentLoaded', function() {
+        // ダッシュボードサマリー取得
+        if (google && google.script && google.script.run) {
+          google.script.run.withSuccessHandler(function(summary) {
+            document.getElementById('summaryTotalSales').textContent = summary.totalSales.toLocaleString() + ' 円';
+            document.getElementById('summarySalesCount').textContent = summary.salesCount + ' 件';
+            document.getElementById('summaryTotalProfit').textContent = summary.totalProfit.toLocaleString() + ' 円';
+            document.getElementById('summaryTotalStock').textContent = summary.totalStock + ' 個';
+            document.getElementById('summaryOutOfStockCount').textContent = summary.outOfStockCount + ' 件';
+            document.getElementById('summaryListedCount').textContent = summary.listedCount + ' 件';
+          }).getDashboardSummary();
+        }
+      });
     </script>
   </body>
 </html> 
