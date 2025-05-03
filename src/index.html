@@ -77,13 +77,116 @@
       </div>
     </div>
     
+    <!-- 商品登録モーダル -->
+    <div class="modal fade" id="productRegisterModal" tabindex="-1" aria-labelledby="productRegisterModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="productRegisterModalLabel">新規商品登録</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="productRegisterForm">
+              <div class="mb-3">
+                <label for="productName" class="form-label">商品名<span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="productName" required>
+              </div>
+              <div class="mb-3">
+                <label for="category" class="form-label">カテゴリ<span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="category" required>
+              </div>
+              <div class="mb-3">
+                <label for="costPrice" class="form-label">仕入れ価格<span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="costPrice" required>
+              </div>
+              <div class="mb-3">
+                <label for="salePrice" class="form-label">販売予定価格<span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="salePrice" required>
+              </div>
+              <div class="mb-3">
+                <label for="status" class="form-label">状態</label>
+                <input type="text" class="form-control" id="status">
+              </div>
+              <div class="mb-3">
+                <label for="note" class="form-label">備考</label>
+                <input type="text" class="form-control" id="note">
+              </div>
+              <div class="mb-3">
+                <label for="stock" class="form-label">在庫数<span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="stock" required>
+              </div>
+              <div class="mb-3">
+                <label for="inventoryStatus" class="form-label">ステータス</label>
+                <select class="form-select" id="inventoryStatus">
+                  <option value="未出品">未出品</option>
+                  <option value="出品中">出品中</option>
+                  <option value="売約済み">売約済み</option>
+                  <option value="発送済み">発送済み</option>
+                </select>
+              </div>
+            </form>
+            <div id="productRegisterError" class="text-danger"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            <button type="button" class="btn btn-primary" onclick="submitProductRegister()">登録</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       // 各機能のプレースホルダー関数
       function showProductForm() {
-        google.script.run.withSuccessHandler(function(result) {
-          // 商品登録フォームを表示
-        }).getProductForm();
+        const modal = new bootstrap.Modal(document.getElementById('productRegisterModal'));
+        document.getElementById('productRegisterForm').reset();
+        document.getElementById('productRegisterError').textContent = '';
+        modal.show();
+      }
+      
+      function submitProductRegister() {
+        const name = document.getElementById('productName').value.trim();
+        const category = document.getElementById('category').value.trim();
+        const costPrice = document.getElementById('costPrice').value;
+        const salePrice = document.getElementById('salePrice').value;
+        const status = document.getElementById('status').value.trim();
+        const note = document.getElementById('note').value.trim();
+        const stock = document.getElementById('stock').value;
+        const inventoryStatus = document.getElementById('inventoryStatus').value;
+
+        // バリデーション
+        if (!name || !category || !costPrice || !salePrice || !stock) {
+          document.getElementById('productRegisterError').textContent = '必須項目をすべて入力してください。';
+          return;
+        }
+        if (isNaN(costPrice) || isNaN(salePrice) || isNaN(stock)) {
+          document.getElementById('productRegisterError').textContent = '価格・在庫数は数値で入力してください。';
+          return;
+        }
+
+        const product = {
+          商品名: name,
+          カテゴリ: category,
+          仕入れ価格: Number(costPrice),
+          販売予定価格: Number(salePrice),
+          状態: status,
+          備考: note
+        };
+        const inventory = {
+          在庫数: Number(stock),
+          ステータス: inventoryStatus
+        };
+
+        // GAS側の関数呼び出し
+        google.script.run.withSuccessHandler(function(productId) {
+          // 成功時はモーダルを閉じてリセット
+          const modal = bootstrap.Modal.getInstance(document.getElementById('productRegisterModal'));
+          modal.hide();
+          alert('商品登録が完了しました！\n商品ID: ' + productId);
+        }).withFailureHandler(function(error) {
+          document.getElementById('productRegisterError').textContent = error.message || error;
+        }).registerProductAndInventory(product, inventory);
       }
       
       function showInventory() {

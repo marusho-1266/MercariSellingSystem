@@ -104,4 +104,18 @@ function deleteProduct(productId) {
     }
   }
   throw new Error('該当する商品IDが見つかりません');
+}
+
+// 商品登録＋在庫登録をまとめて行う関数（UIから呼び出し用）
+function registerProductAndInventory(product, inventory) {
+  try {
+    // 商品マスタ登録
+    var productId = createProduct(product);
+    // 在庫管理登録
+    inventory.商品ID = productId;
+    createInventory(inventory);
+    return productId;
+  } catch (e) {
+    throw new Error(e.message || e);
+  }
 } 
