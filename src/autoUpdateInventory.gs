@@ -72,4 +72,9 @@ function createTestData() {
   salesSheet.appendRow(['取引ID', '商品ID', '販売日', '販売価格', '販売手数料', '送料', '購入者情報', '取引ステータス']);
   salesSheet.appendRow(['T001', 'P001', '2024/06/01', 2000, 200, 100, 'テスト太郎', '売約済み']);
   salesSheet.appendRow(['T002', 'P002', '2024/06/02', 1200, 100, 80, 'テスト花子', '売約済み']);
+}
+
+// Webアプリ用エントリポイント
+function doGet(e) {
+  return HtmlService.createHtmlOutputFromFile('index');
 } 
