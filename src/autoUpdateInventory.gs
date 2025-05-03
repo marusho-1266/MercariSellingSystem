@@ -77,4 +77,40 @@ function createTestData() {
 // Webアプリ用エントリポイント
 function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('index');
+}
+
+// 在庫一覧データ取得（商品マスタJOIN）
+function getInventoryList() {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+  const inventorySheet = ss.getSheetByName('在庫管理');
+  const productSheet = ss.getSheetByName('商品マスタ');
+  if (!inventorySheet || !productSheet) throw new Error('必要なシートが存在しません');
+
+  const inventoryData = inventorySheet.getDataRange().getValues();
+  const productData = productSheet.getDataRange().getValues();
+  const productMap = {};
+  for (let i = 1; i < productData.length; i++) {
+    productMap[productData[i][0]] = {
+      商品名: productData[i][1],
+      カテゴリ: productData[i][2]
+    };
+  }
+
+  const result = [];
+  for (let i = 1; i < inventoryData.length; i++) {
+    const row = inventoryData[i];
+    const productId = row[0];
+    result.push({
+      商品ID: productId,
+      商品名: productMap[productId] ? productMap[productId].商品名 : '',
+      カテゴリ: productMap[productId] ? productMap[productId].カテゴリ : '',
+      在庫数: row[1],
+      ステータス: row[2],
+      最終更新日: row[3]
+    });
+  }
+  return result;
 } 
