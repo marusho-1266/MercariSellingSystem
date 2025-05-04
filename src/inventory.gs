@@ -111,4 +111,40 @@ function deleteInventory(productId) {
     }
   }
   throw new Error('該当する商品IDが見つかりません');
+}
+
+// 出品可能な在庫一覧取得関数: ステータスが「出品可能」の商品ID・商品名を返す
+function getListableInventory() {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+  const inventorySheet = ss.getSheetByName('在庫管理');
+  if (!inventorySheet) throw new Error('在庫管理シートが存在しません');
+  const inventoryData = inventorySheet.getDataRange().getValues();
+  const inventoryHeaders = inventoryData[0];
+  const statusIdx = inventoryHeaders.indexOf('ステータス');
+  const productIdIdx = inventoryHeaders.indexOf('商品ID');
+  const productMasterSheet = ss.getSheetByName('商品マスタ');
+  if (!productMasterSheet) throw new Error('商品マスタシートが存在しません');
+  const productMasterData = productMasterSheet.getDataRange().getValues();
+  const productMasterHeaders = productMasterData[0];
+  const productNameIdx = productMasterHeaders.indexOf('商品名');
+  const productIdMasterIdx = productMasterHeaders.indexOf('商品ID');
+  const result = [];
+  for (let i = 1; i < inventoryData.length; i++) {
+    if (inventoryData[i][statusIdx] === '出品可能') {
+      const pid = inventoryData[i][productIdIdx];
+      // 商品名取得
+      let pname = '';
+      for (let j = 1; j < productMasterData.length; j++) {
+        if (productMasterData[j][productIdMasterIdx] === pid) {
+          pname = productMasterData[j][productNameIdx];
+          break;
+        }
+      }
+      result.push({ 商品ID: pid, 商品名: pname });
+    }
+  }
+  return result;
 } 

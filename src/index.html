@@ -287,7 +287,9 @@
             <form id="listingRegisterForm">
               <div class="mb-3">
                 <label for="listingProductId" class="form-label">商品ID<span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="listingProductId" required>
+                <select class="form-select" id="listingProductId" required>
+                  <option value="">選択してください</option>
+                </select>
               </div>
               <div class="mb-3">
                 <label for="listingCount" class="form-label">出品数<span class="text-danger">*</span></label>
@@ -476,14 +478,36 @@
         const modal = new bootstrap.Modal(document.getElementById('listingRegisterModal'));
         document.getElementById('listingRegisterForm').reset();
         document.getElementById('listingRegisterError').textContent = '';
+        // 商品リスト取得＆select生成
+        const select = document.getElementById('listingProductId');
+        select.innerHTML = '<option value="">選択してください</option>';
+        google.script.run.withSuccessHandler(function(list) {
+          if (!list || list.length === 0) {
+            select.innerHTML = '<option value="">出品可能な商品がありません</option>';
+            return;
+          }
+          list.forEach(function(item) {
+            const label = item.商品ID + '：' + item.商品名;
+            const option = document.createElement('option');
+            option.value = item.商品ID;
+            option.textContent = label;
+            select.appendChild(option);
+          });
+        }).withFailureHandler(function(error) {
+          select.innerHTML = '<option value="">商品リスト取得エラー</option>';
+        }).getListableInventory();
         modal.show();
       }
       function submitListingRegister() {
-        const productId = document.getElementById('listingProductId').value.trim();
+        const productId = document.getElementById('listingProductId').value;
         const count = document.getElementById('listingCount').value;
         const price = document.getElementById('listingPrice').value;
         const note = document.getElementById('listingNote').value.trim();
-        if (!productId || !count || !price) {
+        if (!productId) {
+          document.getElementById('listingRegisterError').textContent = '商品IDを選択してください。';
+          return;
+        }
+        if (!count || !price) {
           document.getElementById('listingRegisterError').textContent = '必須項目をすべて入力してください。';
           return;
         }
