@@ -93,7 +93,8 @@ function getInventoryList() {
   const productData = productSheet.getDataRange().getValues();
   const productMap = {};
   for (let i = 1; i < productData.length; i++) {
-    productMap[productData[i][0]] = {
+    const pid = String(productData[i][0]).trim();
+    productMap[pid] = {
       商品名: productData[i][1],
       カテゴリ: productData[i][2]
     };
@@ -102,7 +103,8 @@ function getInventoryList() {
   const result = [];
   for (let i = 1; i < inventoryData.length; i++) {
     const row = inventoryData[i];
-    const productId = row[0];
+    const productId = String(row[0]).trim();
+    if (!productId) continue; // 空行スキップ
     result.push({
       商品ID: productId,
       商品名: productMap[productId] ? productMap[productId].商品名 : '',
