@@ -160,7 +160,7 @@ function getSalesList() {
 }
 
 // ①新規登録: 商品マスタ＆在庫管理に登録
-function registerNewProduct(product, stock) {
+function registerNewProduct(product, stock, status) {
   const properties = PropertiesService.getScriptProperties();
   const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
   if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
@@ -184,11 +184,14 @@ function registerNewProduct(product, stock) {
     product.状態 || '',
     product.備考 || ''
   ]);
+  // ステータス選択（デフォルトは「出品可能」）
+  const validStatus = ['出品可能', '仕入中', '在庫切れ'];
+  let inventoryStatus = status && validStatus.includes(status) ? status : '出品可能';
   // 在庫管理登録
   inventorySheet.appendRow([
     productId,
     stock,
-    '未出品',
+    inventoryStatus,
     Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss')
   ]);
   return productId;
