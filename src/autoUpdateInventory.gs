@@ -157,4 +157,115 @@ function getSalesList() {
     });
   }
   return result;
+}
+
+// ①新規登録: 商品マスタ＆在庫管理に登録
+function registerNewProduct(product, stock) {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+  // 商品マスタ
+  let productSheet = ss.getSheetByName('商品マスタ');
+  if (!productSheet) productSheet = ss.insertSheet('商品マスタ');
+  // 在庫管理
+  let inventorySheet = ss.getSheetByName('在庫管理');
+  if (!inventorySheet) inventorySheet = ss.insertSheet('在庫管理');
+
+  // 商品ID発番
+  const productId = 'P' + Date.now() + Math.floor(Math.random() * 1000);
+  // 商品マスタ登録
+  productSheet.appendRow([
+    productId,
+    product.商品名,
+    product.カテゴリ,
+    product.仕入れ価格,
+    product.販売予定価格,
+    product.状態 || '',
+    product.備考 || ''
+  ]);
+  // 在庫管理登録
+  inventorySheet.appendRow([
+    productId,
+    stock,
+    '未出品',
+    Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss')
+  ]);
+  return productId;
+}
+
+// ②出品登録: 在庫管理の在庫数減算＆出品管理に追加
+function registerListing(productId, listingInfo) {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+  // 在庫管理
+  let inventorySheet = ss.getSheetByName('在庫管理');
+  if (!inventorySheet) inventorySheet = ss.insertSheet('在庫管理');
+  // 出品管理
+  let listingSheet = ss.getSheetByName('出品管理');
+  if (!listingSheet) listingSheet = ss.insertSheet('出品管理');
+  // 出品ID発番
+  const listingId = 'L' + Date.now() + Math.floor(Math.random() * 1000);
+  // 在庫数減算
+  const inventoryData = inventorySheet.getDataRange().getValues();
+  for (let i = 1; i < inventoryData.length; i++) {
+    if (String(inventoryData[i][0]).trim() === String(productId).trim()) {
+      let stock = Number(inventoryData[i][1]);
+      if (stock <= 0) throw new Error('在庫がありません');
+      inventorySheet.getRange(i+1, 2).setValue(stock - 1);
+      inventorySheet.getRange(i+1, 3).setValue('出品中');
+      inventorySheet.getRange(i+1, 4).setValue(Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'));
+      break;
+    }
+  }
+  // 出品管理追加
+  listingSheet.appendRow([
+    listingId,
+    productId,
+    listingInfo.出品日,
+    listingInfo.出品価格,
+    '出品中',
+    listingInfo.備考 || ''
+  ]);
+  return listingId;
+}
+
+// ③販売登録: 出品管理の該当行を完了＆販売管理に追加
+function registerSale(listingId, saleInfo) {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+  // 出品管理
+  let listingSheet = ss.getSheetByName('出品管理');
+  if (!listingSheet) throw new Error('出品管理シートが存在しません');
+  // 販売管理
+  let salesSheet = ss.getSheetByName('販売管理');
+  if (!salesSheet) salesSheet = ss.insertSheet('販売管理');
+  // listingIdから商品ID取得＆ステータス完了
+  const listingData = listingSheet.getDataRange().getValues();
+  let productId = '';
+  for (let i = 1; i < listingData.length; i++) {
+    if (String(listingData[i][0]).trim() === String(listingId).trim()) {
+      productId = listingData[i][1];
+      listingSheet.getRange(i+1, 5).setValue('完了');
+      break;
+    }
+  }
+  if (!productId) throw new Error('該当する出品IDが見つかりません');
+  // 販売管理追加
+  const saleId = 'T' + Date.now() + Math.floor(Math.random() * 1000);
+  salesSheet.appendRow([
+    saleId,
+    productId,
+    saleInfo.販売日,
+    saleInfo.販売価格,
+    saleInfo.販売手数料,
+    saleInfo.送料,
+    saleInfo.購入者情報 || '',
+    '売約済み'
+  ]);
+  return saleId;
 } 
