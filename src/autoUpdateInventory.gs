@@ -113,4 +113,44 @@ function getInventoryList() {
     });
   }
   return result;
+}
+
+// 販売一覧データ取得（商品マスタJOIN）
+function getSalesList() {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+  const salesSheet = ss.getSheetByName('販売管理');
+  const productSheet = ss.getSheetByName('商品マスタ');
+  if (!salesSheet || !productSheet) throw new Error('必要なシートが存在しません');
+
+  const salesData = salesSheet.getDataRange().getValues();
+  const productData = productSheet.getDataRange().getValues();
+  const productMap = {};
+  for (let i = 1; i < productData.length; i++) {
+    productMap[productData[i][0]] = {
+      商品名: productData[i][1],
+      カテゴリ: productData[i][2]
+    };
+  }
+
+  const result = [];
+  for (let i = 1; i < salesData.length; i++) {
+    const row = salesData[i];
+    const productId = row[1];
+    result.push({
+      取引ID: row[0],
+      商品ID: productId,
+      商品名: productMap[productId] ? productMap[productId].商品名 : '',
+      カテゴリ: productMap[productId] ? productMap[productId].カテゴリ : '',
+      販売日: row[2],
+      販売価格: row[3],
+      販売手数料: row[4],
+      送料: row[5],
+      購入者情報: row[6],
+      取引ステータス: row[7]
+    });
+  }
+  return result;
 } 
