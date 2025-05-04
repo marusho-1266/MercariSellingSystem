@@ -36,44 +36,6 @@ function autoUpdateInventory(productId) {
   }
 }
 
-// テストデータ作成用関数（GAS上で動作確認用）
-function createTestData() {
-  const properties = PropertiesService.getScriptProperties();
-  let ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
-  let ss;
-  if (!ssId) {
-    ss = SpreadsheetApp.create('メルカリ販売管理システム-テスト');
-    ssId = ss.getId();
-    properties.setProperty('MASTER_SPREADSHEET_ID', ssId);
-  } else {
-    ss = SpreadsheetApp.openById(ssId);
-  }
-
-  // 商品マスタ
-  let productSheet = ss.getSheetByName('商品マスタ');
-  if (!productSheet) productSheet = ss.insertSheet('商品マスタ');
-  productSheet.clear();
-  productSheet.appendRow(['商品ID', '商品名', 'カテゴリ', '仕入れ価格', '販売予定価格', '状態', '備考']);
-  productSheet.appendRow(['P001', 'テスト商品A', '家電', 1000, 2000, '新品', '']);
-  productSheet.appendRow(['P002', 'テスト商品B', '本', 500, 1200, '中古', '']);
-
-  // 在庫管理
-  let inventorySheet = ss.getSheetByName('在庫管理');
-  if (!inventorySheet) inventorySheet = ss.insertSheet('在庫管理');
-  inventorySheet.clear();
-  inventorySheet.appendRow(['商品ID', '在庫数', 'ステータス', '最終更新日']);
-  inventorySheet.appendRow(['P001', 5, '出品中', '']);
-  inventorySheet.appendRow(['P002', 2, '出品中', '']);
-
-  // 販売管理
-  let salesSheet = ss.getSheetByName('販売管理');
-  if (!salesSheet) salesSheet = ss.insertSheet('販売管理');
-  salesSheet.clear();
-  salesSheet.appendRow(['取引ID', '商品ID', '販売日', '販売価格', '販売手数料', '送料', '購入者情報', '取引ステータス']);
-  salesSheet.appendRow(['T001', 'P001', '2024/06/01', 2000, 200, 100, 'テスト太郎', '売約済み']);
-  salesSheet.appendRow(['T002', 'P002', '2024/06/02', 1200, 100, 80, 'テスト花子', '売約済み']);
-}
-
 // Webアプリ用エントリポイント
 function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('index');

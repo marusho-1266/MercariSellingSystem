@@ -7,9 +7,9 @@ function createInventory(inventory) {
   if (isNaN(inventory.在庫数)) {
     throw new Error('在庫数は数値で入力してください');
   }
-  // ステータスは任意だが、なければ「未出品」
-  const status = inventory.ステータス || '未出品';
-  const validStatus = ['未出品', '出品中', '売約済み', '発送済み'];
+  // ステータスは任意だが、なければ「出品可能」
+  const status = inventory.ステータス || '出品可能';
+  const validStatus = ['出品可能', '仕入中', '在庫切れ'];
   if (!validStatus.includes(status)) {
     throw new Error('ステータスが不正です');
   }
