@@ -94,9 +94,10 @@ function getInventoryList() {
   const productMap = {};
   for (let i = 1; i < productData.length; i++) {
     const pid = String(productData[i][0]).trim();
+    if (!pid) continue;
     productMap[pid] = {
-      商品名: productData[i][1],
-      カテゴリ: productData[i][2]
+      商品名: String(productData[i][1]).trim(),
+      カテゴリ: String(productData[i][2]).trim()
     };
   }
 
@@ -104,16 +105,17 @@ function getInventoryList() {
   for (let i = 1; i < inventoryData.length; i++) {
     const row = inventoryData[i];
     const productId = String(row[0]).trim();
-    if (!productId) continue; // 空行スキップ
+    if (!productId) continue;
     result.push({
       商品ID: productId,
       商品名: productMap[productId] ? productMap[productId].商品名 : '',
       カテゴリ: productMap[productId] ? productMap[productId].カテゴリ : '',
-      在庫数: row[1],
-      ステータス: row[2],
-      最終更新日: row[3]
+      在庫数: String(row[1]).trim(),
+      ステータス: String(row[2]).trim(),
+      最終更新日: String(row[3]).trim()
     });
   }
+  Logger.log(result);
   return result;
 }
 
