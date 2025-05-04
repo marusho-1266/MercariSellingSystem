@@ -111,6 +111,7 @@
             </div>
             <div class="card-body">
               <button class="btn btn-success" onclick="showSales()">販売一覧</button>
+              <button class="btn btn-primary ms-2" onclick="showSaleRegisterForm()">販売登録</button>
             </div>
           </div>
         </div>
@@ -350,6 +351,61 @@
       </div>
     </div>
     
+    <!-- 販売登録モーダル -->
+    <div class="modal fade" id="saleRegisterModal" tabindex="-1" aria-labelledby="saleRegisterModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="saleRegisterModalLabel">新規販売登録</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="saleRegisterForm">
+              <div class="mb-3">
+                <label for="saleListingId" class="form-label">出品ID<span class="text-danger">*</span></label>
+                <select class="form-select" id="saleListingId" required>
+                  <option value="">選択してください</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="saleDate" class="form-label">販売日<span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="saleDate" required>
+              </div>
+              <div class="mb-3">
+                <label for="salePrice" class="form-label">販売価格<span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="salePrice" required>
+              </div>
+              <div class="mb-3">
+                <label for="saleFee" class="form-label">販売手数料</label>
+                <input type="number" class="form-control" id="saleFee">
+              </div>
+              <div class="mb-3">
+                <label for="saleShipping" class="form-label">送料</label>
+                <input type="number" class="form-control" id="saleShipping">
+              </div>
+              <div class="mb-3">
+                <label for="saleBuyer" class="form-label">購入者情報</label>
+                <input type="text" class="form-control" id="saleBuyer">
+              </div>
+              <div class="mb-3">
+                <label for="saleStatus" class="form-label">取引ステータス</label>
+                <select class="form-select" id="saleStatus">
+                  <option value="売約済み">売約済み</option>
+                  <option value="発送待ち">発送待ち</option>
+                  <option value="完了">完了</option>
+                </select>
+              </div>
+            </form>
+            <div id="saleRegisterError" class="text-danger"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            <button type="button" class="btn btn-primary" onclick="submitSaleRegister()">登録</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       // 各機能のプレースホルダー関数
@@ -560,6 +616,70 @@
           document.getElementById('listingListError').textContent = error.message || error;
         }).getListingList();
         modal.show();
+      }
+
+      function showSaleRegisterForm() {
+        const modal = new bootstrap.Modal(document.getElementById('saleRegisterModal'));
+        document.getElementById('saleRegisterForm').reset();
+        document.getElementById('saleRegisterError').textContent = '';
+        // 出品中リスト取得＆select生成
+        const select = document.getElementById('saleListingId');
+        select.innerHTML = '<option value="">選択してください</option>';
+        google.script.run.withSuccessHandler(function(list) {
+          if (!list || list.length === 0) {
+            select.innerHTML = '<option value="">出品中の出品がありません</option>';
+            return;
+          }
+          list.forEach(function(item) {
+            const label = item.出品ID + '：' + item.商品名;
+            const option = document.createElement('option');
+            option.value = item.出品ID;
+            option.textContent = label;
+            select.appendChild(option);
+          });
+        }).withFailureHandler(function(error) {
+          select.innerHTML = '<option value="">出品リスト取得エラー</option>';
+        }).getListableListings();
+        modal.show();
+      }
+      function submitSaleRegister() {
+        // 入力値取得
+        const listingId = document.getElementById('saleListingId').value;
+        const saleDate = document.getElementById('saleDate').value;
+        const salePrice = document.getElementById('salePrice').value;
+        const saleFee = document.getElementById('saleFee').value;
+        const saleShipping = document.getElementById('saleShipping').value;
+        const saleBuyer = document.getElementById('saleBuyer').value.trim();
+        const saleStatus = document.getElementById('saleStatus').value;
+        // バリデーション
+        if (!listingId) {
+          document.getElementById('saleRegisterError').textContent = '出品IDを選択してください。';
+          return;
+        }
+        if (!saleDate || !salePrice) {
+          document.getElementById('saleRegisterError').textContent = '必須項目をすべて入力してください。';
+          return;
+        }
+        if (isNaN(salePrice) || (saleFee && isNaN(saleFee)) || (saleShipping && isNaN(saleShipping))) {
+          document.getElementById('saleRegisterError').textContent = '価格・手数料・送料は数値で入力してください。';
+          return;
+        }
+        // GAS連携
+        const saleInfo = {
+          販売日: saleDate,
+          販売価格: Number(salePrice),
+          販売手数料: saleFee ? Number(saleFee) : 0,
+          送料: saleShipping ? Number(saleShipping) : 0,
+          購入者情報: saleBuyer,
+          取引ステータス: saleStatus
+        };
+        google.script.run.withSuccessHandler(function(saleId) {
+          const modal = bootstrap.Modal.getInstance(document.getElementById('saleRegisterModal'));
+          modal.hide();
+          alert('販売登録が完了しました！\n取引ID: ' + saleId);
+        }).withFailureHandler(function(error) {
+          document.getElementById('saleRegisterError').textContent = error.message || error;
+        }).registerSale(listingId, saleInfo);
       }
 
       window.addEventListener('DOMContentLoaded', function() {

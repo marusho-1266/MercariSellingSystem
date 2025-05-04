@@ -112,4 +112,35 @@ function getListingList() {
     // フロントエンドの failureHandler でエラーをキャッチできるように再スロー
     throw new Error('出品一覧の取得中にエラーが発生しました: ' + e.message);
   }
+}
+
+// 出品中の出品ID＋商品名リスト取得（販売登録用）
+function getListableListings() {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+  const listingSheet = ss.getSheetByName('出品管理');
+  const productSheet = ss.getSheetByName('商品マスタ');
+  if (!listingSheet || !productSheet) throw new Error('必要なシートが存在しません');
+
+  const listingData = listingSheet.getDataRange().getValues();
+  const productData = productSheet.getDataRange().getValues();
+  const productMap = {};
+  for (let i = 1; i < productData.length; i++) {
+    productMap[productData[i][0]] = productData[i][1]; // 商品ID→商品名
+  }
+  const result = [];
+  const statusIdx = listingData[0].indexOf('ステータス');
+  const listingIdIdx = listingData[0].indexOf('出品ID');
+  const productIdIdx = listingData[0].indexOf('商品ID');
+  for (let i = 1; i < listingData.length; i++) {
+    if (listingData[i][statusIdx] === '出品中') {
+      result.push({
+        出品ID: listingData[i][listingIdIdx],
+        商品名: productMap[listingData[i][productIdIdx]] || ''
+      });
+    }
+  }
+  return result;
 } 
