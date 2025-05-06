@@ -143,6 +143,20 @@
           </div>
         </div>
       </div>
+
+      <div class="row">
+        <!-- 仕入管理 -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">仕入管理</h5>
+            </div>
+            <div class="card-body">
+              <button class="btn btn-secondary" onclick="showPurchaseRegisterForm()">仕入登録</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     
     <!-- 商品登録モーダル -->
@@ -401,6 +415,57 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
             <button type="button" class="btn btn-primary" onclick="submitSaleRegister()">登録</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 仕入登録モーダル -->
+    <div class="modal fade" id="purchaseRegisterModal" tabindex="-1" aria-labelledby="purchaseRegisterModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="purchaseRegisterModalLabel">新規仕入登録</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="purchaseRegisterForm">
+              <div class="mb-3">
+                <label for="purchaseProductId" class="form-label">商品ID<span class="text-danger">*</span></label>
+                <select class="form-select" id="purchaseProductId" required>
+                  <option value="">選択してください</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="purchaseDate" class="form-label">仕入日<span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="purchaseDate" required>
+              </div>
+              <div class="mb-3">
+                <label for="purchaseQty" class="form-label">仕入数<span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="purchaseQty" required>
+              </div>
+              <div class="mb-3">
+                <label for="purchasePrice" class="form-label">仕入価格<span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="purchasePrice" required>
+              </div>
+              <div class="mb-3">
+                <label for="purchaseStatus" class="form-label">ステータス</label>
+                <select class="form-select" id="purchaseStatus">
+                  <option value="完了">完了</option>
+                  <option value="仕入中">仕入中</option>
+                  <option value="キャンセル">キャンセル</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="purchaseNote" class="form-label">備考</label>
+                <input type="text" class="form-control" id="purchaseNote">
+              </div>
+            </form>
+            <div id="purchaseRegisterError" class="text-danger"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            <button type="button" class="btn btn-primary" onclick="submitPurchaseRegister()">登録</button>
           </div>
         </div>
       </div>
@@ -681,6 +746,62 @@
         }).withFailureHandler(function(error) {
           document.getElementById('saleRegisterError').textContent = error.message || error;
         }).registerSale(listingId, saleInfo);
+      }
+
+      function showPurchaseRegisterForm() {
+        const modal = new bootstrap.Modal(document.getElementById('purchaseRegisterModal'));
+        document.getElementById('purchaseRegisterForm').reset();
+        document.getElementById('purchaseRegisterError').textContent = '';
+        // 商品リスト取得＆select生成
+        const select = document.getElementById('purchaseProductId');
+        select.innerHTML = '<option value="">選択してください</option>';
+        google.script.run.withSuccessHandler(function(list) {
+          if (!list || list.length === 0) {
+            select.innerHTML = '<option value="">商品がありません</option>';
+            return;
+          }
+          list.forEach(function(item) {
+            const label = item.商品ID + '：' + item.商品名;
+            const option = document.createElement('option');
+            option.value = item.商品ID;
+            option.textContent = label;
+            select.appendChild(option);
+          });
+        }).withFailureHandler(function(error) {
+          select.innerHTML = '<option value="">商品リスト取得エラー</option>';
+        }).getInventoryList(); // 商品マスタ一覧取得用GAS関数
+        modal.show();
+      }
+      function submitPurchaseRegister() {
+        const productId = document.getElementById('purchaseProductId').value;
+        const date = document.getElementById('purchaseDate').value;
+        const qty = document.getElementById('purchaseQty').value;
+        const price = document.getElementById('purchasePrice').value;
+        const status = document.getElementById('purchaseStatus').value;
+        const note = document.getElementById('purchaseNote').value.trim();
+        if (!productId || !date || !qty || !price) {
+          document.getElementById('purchaseRegisterError').textContent = '必須項目をすべて入力してください。';
+          return;
+        }
+        if (isNaN(qty) || isNaN(price)) {
+          document.getElementById('purchaseRegisterError').textContent = '仕入数・仕入価格は数値で入力してください。';
+          return;
+        }
+        const purchase = {
+          商品ID: productId,
+          仕入日: date,
+          仕入数: Number(qty),
+          仕入価格: Number(price),
+          ステータス: status,
+          備考: note
+        };
+        google.script.run.withSuccessHandler(function(purchaseId) {
+          const modal = bootstrap.Modal.getInstance(document.getElementById('purchaseRegisterModal'));
+          modal.hide();
+          alert('仕入登録が完了しました！\n仕入ID: ' + purchaseId);
+        }).withFailureHandler(function(error) {
+          document.getElementById('purchaseRegisterError').textContent = error.message || error;
+        }).registerPurchase(purchase);
       }
 
       window.addEventListener('DOMContentLoaded', function() {

@@ -312,4 +312,164 @@ function registerPurchase(purchase) {
     purchase.備考 || ''
   ]);
   return purchaseId;
+}
+
+// 仕入更新: 仕入管理シートの該当行編集、在庫数調整
+function updatePurchase(purchaseId, updateFields) {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+
+  // 仕入管理シート
+  let purchaseSheet = ss.getSheetByName('仕入管理');
+  if (!purchaseSheet) throw new Error('仕入管理シートが存在しません');
+  const purchaseData = purchaseSheet.getDataRange().getValues();
+  const purchaseHeaders = purchaseData[0];
+  let rowIdx = -1;
+  let oldProductId = '';
+  let oldQty = 0;
+  for (let i = 1; i < purchaseData.length; i++) {
+    if (purchaseData[i][0] === purchaseId) {
+      rowIdx = i + 1;
+      oldProductId = purchaseData[i][1];
+      oldQty = Number(purchaseData[i][3]);
+      break;
+    }
+  }
+  if (rowIdx === -1) throw new Error('該当する仕入IDが見つかりません');
+
+  // 在庫管理シート
+  let inventorySheet = ss.getSheetByName('在庫管理');
+  if (!inventorySheet) throw new Error('在庫管理シートが存在しません');
+  const inventoryData = inventorySheet.getDataRange().getValues();
+  const inventoryHeaders = inventoryData[0];
+  let invRowIdx = -1;
+  let currentStock = 0;
+  for (let i = 1; i < inventoryData.length; i++) {
+    if (inventoryData[i][0] === oldProductId) {
+      invRowIdx = i + 1;
+      currentStock = Number(inventoryData[i][1]);
+      break;
+    }
+  }
+  if (invRowIdx === -1) throw new Error('該当する商品IDの在庫が見つかりません');
+
+  // 仕入数の増減分を計算
+  let newQty = updateFields.仕入数 !== undefined ? Number(updateFields.仕入数) : oldQty;
+  let diff = newQty - oldQty;
+  // 在庫数調整
+  inventorySheet.getRange(invRowIdx, 2).setValue(currentStock + diff);
+  // ステータス自動遷移
+  const statusColIdx = inventoryHeaders.indexOf('ステータス');
+  if (statusColIdx !== -1) {
+    const newStock = currentStock + diff;
+    const newStatus = newStock > 0 ? '出品可能' : '仕入中';
+    inventorySheet.getRange(invRowIdx, statusColIdx + 1).setValue(newStatus);
+  }
+  // 最終更新日も更新
+  const dateColIdx = inventoryHeaders.indexOf('最終更新日');
+  if (dateColIdx !== -1) {
+    inventorySheet.getRange(invRowIdx, dateColIdx + 1).setValue(Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'));
+  }
+
+  // 仕入管理シートの該当行を更新
+  for (const key in updateFields) {
+    const colIdx = purchaseHeaders.indexOf(key);
+    if (colIdx !== -1) {
+      purchaseSheet.getRange(rowIdx, colIdx + 1).setValue(updateFields[key]);
+    }
+  }
+  return true;
+}
+
+// 仕入削除: 仕入管理シートの該当行削除、在庫数調整
+function deletePurchase(purchaseId) {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+
+  // 仕入管理シート
+  let purchaseSheet = ss.getSheetByName('仕入管理');
+  if (!purchaseSheet) throw new Error('仕入管理シートが存在しません');
+  const purchaseData = purchaseSheet.getDataRange().getValues();
+  const purchaseHeaders = purchaseData[0];
+  let rowIdx = -1;
+  let productId = '';
+  let qty = 0;
+  for (let i = 1; i < purchaseData.length; i++) {
+    if (purchaseData[i][0] === purchaseId) {
+      rowIdx = i + 1;
+      productId = purchaseData[i][1];
+      qty = Number(purchaseData[i][3]);
+      break;
+    }
+  }
+  if (rowIdx === -1) throw new Error('該当する仕入IDが見つかりません');
+
+  // 在庫管理シート
+  let inventorySheet = ss.getSheetByName('在庫管理');
+  if (!inventorySheet) throw new Error('在庫管理シートが存在しません');
+  const inventoryData = inventorySheet.getDataRange().getValues();
+  const inventoryHeaders = inventoryData[0];
+  let invRowIdx = -1;
+  let currentStock = 0;
+  for (let i = 1; i < inventoryData.length; i++) {
+    if (inventoryData[i][0] === productId) {
+      invRowIdx = i + 1;
+      currentStock = Number(inventoryData[i][1]);
+      break;
+    }
+  }
+  if (invRowIdx === -1) throw new Error('該当する商品IDの在庫が見つかりません');
+
+  // 在庫数減算
+  const newStock = Math.max(0, currentStock - qty);
+  inventorySheet.getRange(invRowIdx, 2).setValue(newStock);
+  // ステータス自動遷移
+  const statusColIdx = inventoryHeaders.indexOf('ステータス');
+  if (statusColIdx !== -1) {
+    const newStatus = newStock > 0 ? '出品可能' : '仕入中';
+    inventorySheet.getRange(invRowIdx, statusColIdx + 1).setValue(newStatus);
+  }
+  // 最終更新日も更新
+  const dateColIdx = inventoryHeaders.indexOf('最終更新日');
+  if (dateColIdx !== -1) {
+    inventorySheet.getRange(invRowIdx, dateColIdx + 1).setValue(Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'));
+  }
+
+  // 仕入管理シートの該当行削除
+  purchaseSheet.deleteRow(rowIdx);
+  return true;
+}
+
+// 仕入リスト取得: 仕入管理シートの履歴一覧取得
+function getPurchaseList() {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+  const purchaseSheet = ss.getSheetByName('仕入管理');
+  if (!purchaseSheet) throw new Error('仕入管理シートが存在しません');
+  const data = purchaseSheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+  const headers = data[0];
+  const list = [];
+  for (let i = 1; i < data.length; i++) {
+    const rowData = data[i];
+    // 空行スキップ
+    if (rowData.every(cell => cell === '' || cell === null)) continue;
+    const row = {};
+    headers.forEach((h, idx) => {
+      let value = rowData[idx];
+      // Date型は文字列化
+      if (value instanceof Date) {
+        value = Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy/MM/dd HH:mm:ss');
+      }
+      row[h] = value;
+    });
+    list.push(row);
+  }
+  return list;
 } 
