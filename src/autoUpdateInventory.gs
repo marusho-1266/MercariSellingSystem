@@ -136,6 +136,23 @@ function getSalesList() {
   return result;
 }
 
+// 商品IDが商品マスタに存在するかチェックする共通関数
+function validateProductIdExists(productId) {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+  const productSheet = ss.getSheetByName('商品マスタ');
+  if (!productSheet) throw new Error('商品マスタシートが存在しません');
+  const productData = productSheet.getDataRange().getValues();
+  for (let i = 1; i < productData.length; i++) {
+    if (String(productData[i][0]).trim() === String(productId).trim()) {
+      return true;
+    }
+  }
+  throw new Error('商品IDが商品マスタに存在しません: ' + productId);
+}
+
 // ①新規登録: 商品マスタ＆在庫管理に登録
 function registerNewProduct(product, stock, status) {
   const properties = PropertiesService.getScriptProperties();
@@ -254,9 +271,10 @@ function registerSale(listingId, saleInfo) {
 // 仕入登録: 仕入管理シートに履歴追加、在庫数加算、ステータス自動遷移
 function registerPurchase(purchase) {
   // 必須バリデーション
+  validateProductIdExists(purchase.商品ID);
   if (!purchase.商品ID) throw new Error('商品IDは必須です');
   if (!purchase.仕入日) throw new Error('仕入日は必須です');
-  if (isNaN(purchase.仕入数) || purchase.仕入数 <= 0) throw new Error('仕入数は1以上の数値で入力してください');
+  if (isNaN(purchase.仕入数) || purchase.仕入数 <= 0 || !Number.isInteger(Number(purchase.仕入数))) throw new Error('仕入数は1以上の整数で入力してください');
   if (isNaN(purchase.仕入価格) || purchase.仕入価格 < 0) throw new Error('仕入価格は0以上の数値で入力してください');
 
   const properties = PropertiesService.getScriptProperties();
@@ -286,6 +304,7 @@ function registerPurchase(purchase) {
 
   // 在庫数加算
   const newStock = currentStock + Number(purchase.仕入数);
+  if (newStock < 0) throw new Error('在庫数が負の値になります');
   inventorySheet.getRange(inventoryRowIdx, 2).setValue(newStock);
   // ステータス自動遷移（在庫数>0なら「出品可能」）
   const statusColIdx = inventoryHeaders.indexOf('ステータス');
@@ -355,10 +374,15 @@ function updatePurchase(purchaseId, updateFields) {
   }
   if (invRowIdx === -1) throw new Error('該当する商品IDの在庫が見つかりません');
 
+  validateProductIdExists(oldProductId);
+
   // 仕入数の増減分を計算
   let newQty = updateFields.仕入数 !== undefined ? Number(updateFields.仕入数) : oldQty;
+  if (isNaN(newQty) || newQty <= 0 || !Number.isInteger(newQty)) throw new Error('仕入数は1以上の整数で入力してください');
+  if (updateFields.仕入価格 !== undefined && (isNaN(Number(updateFields.仕入価格)) || Number(updateFields.仕入価格) < 0)) throw new Error('仕入価格は0以上の数値で入力してください');
   let diff = newQty - oldQty;
   // 在庫数調整
+  if (currentStock + diff < 0) throw new Error('在庫数が負の値になります');
   inventorySheet.getRange(invRowIdx, 2).setValue(currentStock + diff);
   // ステータス自動遷移
   const statusColIdx = inventoryHeaders.indexOf('ステータス');
@@ -424,8 +448,11 @@ function deletePurchase(purchaseId) {
   }
   if (invRowIdx === -1) throw new Error('該当する商品IDの在庫が見つかりません');
 
+  validateProductIdExists(productId);
+
   // 在庫数減算
   const newStock = Math.max(0, currentStock - qty);
+  if (newStock < 0) throw new Error('在庫数が負の値になります');
   inventorySheet.getRange(invRowIdx, 2).setValue(newStock);
   // ステータス自動遷移
   const statusColIdx = inventoryHeaders.indexOf('ステータス');

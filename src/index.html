@@ -153,6 +153,7 @@
             </div>
             <div class="card-body">
               <button class="btn btn-secondary" onclick="showPurchaseRegisterForm()">仕入登録</button>
+              <button class="btn btn-info ms-2" onclick="showPurchaseList()">仕入一覧</button>
             </div>
           </div>
         </div>
@@ -466,6 +467,42 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
             <button type="button" class="btn btn-primary" onclick="submitPurchaseRegister()">登録</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 仕入一覧モーダル -->
+    <div class="modal fade" id="purchaseListModal" tabindex="-1" aria-labelledby="purchaseListModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="purchaseListModalLabel">仕入一覧</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover align-middle" id="purchaseListTable">
+                <thead class="table-light">
+                  <tr>
+                    <th>仕入ID</th>
+                    <th>商品ID</th>
+                    <th>仕入日</th>
+                    <th>仕入数</th>
+                    <th>仕入価格</th>
+                    <th>ステータス</th>
+                    <th>備考</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- JSでデータ挿入 -->
+                </tbody>
+              </table>
+            </div>
+            <div id="purchaseListError" class="text-danger"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
           </div>
         </div>
       </div>
@@ -802,6 +839,37 @@
         }).withFailureHandler(function(error) {
           document.getElementById('purchaseRegisterError').textContent = error.message || error;
         }).registerPurchase(purchase);
+      }
+
+      function showPurchaseList() {
+        const modal = new bootstrap.Modal(document.getElementById('purchaseListModal'));
+        document.getElementById('purchaseListError').textContent = '';
+        const tbody = document.querySelector('#purchaseListTable tbody');
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">読み込み中...</td></tr>';
+        google.script.run.withSuccessHandler(function(list) {
+          if (!list || list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">データがありません</td></tr>';
+            return;
+          }
+          tbody.innerHTML = '';
+          list.forEach(function(item) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${item.仕入ID}</td>
+              <td>${item.商品ID}</td>
+              <td>${item.仕入日}</td>
+              <td>${item.仕入数}</td>
+              <td>${item.仕入価格}</td>
+              <td>${item.ステータス}</td>
+              <td>${item.備考 || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }).withFailureHandler(function(error) {
+          tbody.innerHTML = '';
+          document.getElementById('purchaseListError').textContent = error.message || error;
+        }).getPurchaseList();
+        modal.show();
       }
 
       window.addEventListener('DOMContentLoaded', function() {
