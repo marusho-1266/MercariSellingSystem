@@ -168,8 +168,8 @@
                 <input type="number" class="form-control" id="costPrice" required>
               </div>
               <div class="mb-3">
-                <label for="salePrice" class="form-label">販売予定価格<span class="text-danger">*</span></label>
-                <input type="number" class="form-control" id="salePrice" required>
+                <label for="productSalePrice" class="form-label">販売予定価格<span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="productSalePrice" required>
               </div>
               <div class="mb-3">
                 <label for="status" class="form-label">状態</label>
@@ -372,8 +372,8 @@
                 <input type="date" class="form-control" id="saleDate" required>
               </div>
               <div class="mb-3">
-                <label for="salePrice" class="form-label">販売価格<span class="text-danger">*</span></label>
-                <input type="number" class="form-control" id="salePrice" required>
+                <label for="saleRegisterPrice" class="form-label">販売価格<span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="saleRegisterPrice" required>
               </div>
               <div class="mb-3">
                 <label for="saleFee" class="form-label">販売手数料</label>
@@ -420,7 +420,7 @@
         const name = document.getElementById('productName').value.trim();
         const category = document.getElementById('category').value.trim();
         const costPrice = document.getElementById('costPrice').value;
-        const salePrice = document.getElementById('salePrice').value;
+        const salePrice = document.getElementById('productSalePrice').value; // ID変更
         const status = document.getElementById('status').value.trim();
         const note = document.getElementById('note').value.trim();
         const stock = document.getElementById('stock').value;
@@ -644,23 +644,24 @@
       }
       function submitSaleRegister() {
         // 入力値取得
-        const listingId = document.getElementById('saleListingId').value;
+        const listingId = document.getElementById('saleListingId').value; // valueは直接IDなので、そのまま使う
         const saleDate = document.getElementById('saleDate').value;
-        const salePrice = document.getElementById('salePrice').value;
+        const salePrice = document.getElementById('saleRegisterPrice').value;
         const saleFee = document.getElementById('saleFee').value;
         const saleShipping = document.getElementById('saleShipping').value;
         const saleBuyer = document.getElementById('saleBuyer').value.trim();
         const saleStatus = document.getElementById('saleStatus').value;
+
         // バリデーション
         if (!listingId) {
           document.getElementById('saleRegisterError').textContent = '出品IDを選択してください。';
           return;
         }
-        if (!saleDate || !salePrice) {
+        if (!saleDate || salePrice === '') { // 販売日がない、または販売価格が空文字かチェック (nullチェックは不要)
           document.getElementById('saleRegisterError').textContent = '必須項目をすべて入力してください。';
           return;
         }
-        if (isNaN(salePrice) || (saleFee && isNaN(saleFee)) || (saleShipping && isNaN(saleShipping))) {
+        if (isNaN(Number(salePrice)) || (saleFee !== '' && isNaN(Number(saleFee))) || (saleShipping !== '' && isNaN(Number(saleShipping)))) {
           document.getElementById('saleRegisterError').textContent = '価格・手数料・送料は数値で入力してください。';
           return;
         }
