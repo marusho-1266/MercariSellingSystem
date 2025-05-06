@@ -77,26 +77,17 @@
       </div>
       
       <div class="row">
-        <!-- 商品登録 -->
-        <div class="col-md-6">
+        <!-- 商品・在庫・仕入管理まとめ -->
+        <div class="col-md-12">
           <div class="card">
             <div class="card-header">
-              <h5 class="card-title mb-0">商品登録</h5>
+              <h5 class="card-title mb-0">商品・在庫・仕入管理</h5>
             </div>
             <div class="card-body">
-              <button class="btn btn-primary" onclick="showProductForm()">新規商品登録</button>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 在庫管理 -->
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="card-title mb-0">在庫管理</h5>
-            </div>
-            <div class="card-body">
-              <button class="btn btn-info" onclick="showInventory()">在庫一覧</button>
+              <button class="btn btn-primary me-2" onclick="showProductForm()">新規商品登録</button>
+              <button class="btn btn-info me-2" onclick="showInventory()">在庫一覧</button>
+              <button class="btn btn-secondary me-2" onclick="showPurchaseRegisterForm()">仕入登録</button>
+              <button class="btn btn-info" onclick="showPurchaseList()">仕入一覧</button>
             </div>
           </div>
         </div>
@@ -139,21 +130,6 @@
             <div class="card-body">
               <button class="btn btn-secondary" onclick="showListingForm()">出品登録</button>
               <button class="btn btn-info ms-2" onclick="showListingList()">出品一覧</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <!-- 仕入管理 -->
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="card-title mb-0">仕入管理</h5>
-            </div>
-            <div class="card-body">
-              <button class="btn btn-secondary" onclick="showPurchaseRegisterForm()">仕入登録</button>
-              <button class="btn btn-info ms-2" onclick="showPurchaseList()">仕入一覧</button>
             </div>
           </div>
         </div>
