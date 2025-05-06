@@ -4,7 +4,7 @@ function createAllSheetsFromSpec() {
   let ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
   let ss;
   if (!ssId) {
-    ss = SpreadsheetApp.create('メルカリ販売管理システム-仕様準拠');
+    ss = SpreadsheetApp.create('メルカリ販売管理システム');
     ssId = ss.getId();
     properties.setProperty('MASTER_SPREADSHEET_ID', ssId);
   } else {
@@ -40,4 +40,10 @@ function createAllSheetsFromSpec() {
   if (!financeSheet) financeSheet = ss.insertSheet('財務管理');
   financeSheet.clear();
   financeSheet.appendRow(['日付', '取引ID', '収入', '支出', '利益', '備考']);
+
+  // 仕入管理シート
+  let purchaseSheet = ss.getSheetByName('仕入管理');
+  if (!purchaseSheet) purchaseSheet = ss.insertSheet('仕入管理');
+  purchaseSheet.clear();
+  purchaseSheet.appendRow(['仕入ID', '商品ID', '仕入日', '仕入数', '仕入価格', 'ステータス', '備考']);
 } 

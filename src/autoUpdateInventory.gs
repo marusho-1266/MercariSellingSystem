@@ -249,4 +249,67 @@ function registerSale(listingId, saleInfo) {
     saleInfo.取引ステータス || '売約済み'
   ]);
   return saleId;
+}
+
+// 仕入登録: 仕入管理シートに履歴追加、在庫数加算、ステータス自動遷移
+function registerPurchase(purchase) {
+  // 必須バリデーション
+  if (!purchase.商品ID) throw new Error('商品IDは必須です');
+  if (!purchase.仕入日) throw new Error('仕入日は必須です');
+  if (isNaN(purchase.仕入数) || purchase.仕入数 <= 0) throw new Error('仕入数は1以上の数値で入力してください');
+  if (isNaN(purchase.仕入価格) || purchase.仕入価格 < 0) throw new Error('仕入価格は0以上の数値で入力してください');
+
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+
+  // 仕入管理シート
+  let purchaseSheet = ss.getSheetByName('仕入管理');
+  if (!purchaseSheet) throw new Error('仕入管理シートが存在しません');
+
+  // 在庫管理シート
+  let inventorySheet = ss.getSheetByName('在庫管理');
+  if (!inventorySheet) throw new Error('在庫管理シートが存在しません');
+  const inventoryData = inventorySheet.getDataRange().getValues();
+  const inventoryHeaders = inventoryData[0];
+  let inventoryRowIdx = -1;
+  let currentStock = 0;
+  for (let i = 1; i < inventoryData.length; i++) {
+    if (inventoryData[i][0] === purchase.商品ID) {
+      inventoryRowIdx = i + 1;
+      currentStock = Number(inventoryData[i][1]);
+      break;
+    }
+  }
+  if (inventoryRowIdx === -1) throw new Error('該当する商品IDの在庫が見つかりません');
+
+  // 在庫数加算
+  const newStock = currentStock + Number(purchase.仕入数);
+  inventorySheet.getRange(inventoryRowIdx, 2).setValue(newStock);
+  // ステータス自動遷移（在庫数>0なら「出品可能」）
+  const statusColIdx = inventoryHeaders.indexOf('ステータス');
+  if (statusColIdx !== -1) {
+    const newStatus = newStock > 0 ? '出品可能' : '仕入中';
+    inventorySheet.getRange(inventoryRowIdx, statusColIdx + 1).setValue(newStatus);
+  }
+  // 最終更新日も更新
+  const dateColIdx = inventoryHeaders.indexOf('最終更新日');
+  if (dateColIdx !== -1) {
+    inventorySheet.getRange(inventoryRowIdx, dateColIdx + 1).setValue(Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'));
+  }
+
+  // 仕入ID発番
+  const purchaseId = 'S' + Date.now() + Math.floor(Math.random() * 1000);
+  // 仕入管理シートに履歴追加
+  purchaseSheet.appendRow([
+    purchaseId,
+    purchase.商品ID,
+    purchase.仕入日,
+    Number(purchase.仕入数),
+    Number(purchase.仕入価格),
+    purchase.ステータス || '完了',
+    purchase.備考 || ''
+  ]);
+  return purchaseId;
 } 
