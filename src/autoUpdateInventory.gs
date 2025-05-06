@@ -92,30 +92,45 @@ function getSalesList() {
   if (!salesSheet || !productSheet) throw new Error('必要なシートが存在しません');
 
   const salesData = salesSheet.getDataRange().getValues();
+  if (salesData.length < 2) return [];
+  const headers = salesData[0];
+  const idx = (name) => headers.indexOf(name);
+
   const productData = productSheet.getDataRange().getValues();
+  const productHeaders = productData[0];
+  const productIdIdx = productHeaders.indexOf('商品ID');
+  const productNameIdx = productHeaders.indexOf('商品名');
+  const categoryIdx = productHeaders.indexOf('カテゴリ');
   const productMap = {};
   for (let i = 1; i < productData.length; i++) {
-    productMap[productData[i][0]] = {
-      商品名: productData[i][1],
-      カテゴリ: productData[i][2]
+    productMap[productData[i][productIdIdx]] = {
+      商品名: productData[i][productNameIdx],
+      カテゴリ: productData[i][categoryIdx]
     };
   }
 
   const result = [];
   for (let i = 1; i < salesData.length; i++) {
     const row = salesData[i];
-    const productId = row[1];
+    // 空行スキップ
+    if (row.every(cell => cell === '' || cell === null)) continue;
+    const productId = row[idx('商品ID')];
+    let saleDate = row[idx('販売日')];
+    if (saleDate instanceof Date) {
+      saleDate = Utilities.formatDate(saleDate, Session.getScriptTimeZone(), 'yyyy/MM/dd HH:mm:ss');
+    }
     result.push({
-      取引ID: row[0],
+      取引ID: row[idx('取引ID')],
+      出品ID: row[idx('出品ID')],
       商品ID: productId,
       商品名: productMap[productId] ? productMap[productId].商品名 : '',
       カテゴリ: productMap[productId] ? productMap[productId].カテゴリ : '',
-      販売日: row[2],
-      販売価格: row[3],
-      販売手数料: row[4],
-      送料: row[5],
-      購入者情報: row[6],
-      取引ステータス: row[7]
+      販売日: saleDate,
+      販売価格: row[idx('販売価格')],
+      販売手数料: row[idx('販売手数料')],
+      送料: row[idx('送料')],
+      購入者情報: row[idx('購入者情報')],
+      取引ステータス: row[idx('取引ステータス')]
     });
   }
   return result;
@@ -224,13 +239,14 @@ function registerSale(listingId, saleInfo) {
   const saleId = 'T' + Date.now() + Math.floor(Math.random() * 1000);
   salesSheet.appendRow([
     saleId,
+    listingId,
     productId,
     saleInfo.販売日,
     saleInfo.販売価格,
     saleInfo.販売手数料,
     saleInfo.送料,
     saleInfo.購入者情報 || '',
-    '売約済み'
+    saleInfo.取引ステータス || '売約済み'
   ]);
   return saleId;
 } 
