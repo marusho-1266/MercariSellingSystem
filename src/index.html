@@ -854,13 +854,20 @@
           tbody.innerHTML = '';
           list.forEach(function(item) {
             const tr = document.createElement('tr');
+            // ステータスselect生成
+            const statusOptions = ['完了', '仕入中', 'キャンセル'];
+            let statusSelect = `<select class='form-select form-select-sm' data-purchase-id='${item.仕入ID}' onchange='handlePurchaseStatusChange(event)'>`;
+            statusOptions.forEach(function(opt) {
+              statusSelect += `<option value='${opt}'${item.ステータス === opt ? ' selected' : ''}>${opt}</option>`;
+            });
+            statusSelect += '</select>';
             tr.innerHTML = `
               <td>${item.仕入ID}</td>
               <td>${item.商品ID}</td>
               <td>${item.仕入日}</td>
               <td>${item.仕入数}</td>
               <td>${item.仕入価格}</td>
-              <td>${item.ステータス}</td>
+              <td>${statusSelect}</td>
               <td>${item.備考 || ''}</td>
             `;
             tbody.appendChild(tr);
@@ -870,6 +877,20 @@
           document.getElementById('purchaseListError').textContent = error.message || error;
         }).getPurchaseList();
         modal.show();
+      }
+
+      // ステータス変更時のハンドラ
+      function handlePurchaseStatusChange(event) {
+        const select = event.target;
+        const purchaseId = select.getAttribute('data-purchase-id');
+        const newStatus = select.value;
+        // GAS連携
+        google.script.run.withSuccessHandler(function() {
+          showPurchaseList(); // 変更後リスト再取得
+        }).withFailureHandler(function(error) {
+          alert('ステータス更新エラー: ' + (error.message || error));
+          showPurchaseList();
+        }).updatePurchase(purchaseId, { 'ステータス': newStatus });
       }
 
       window.addEventListener('DOMContentLoaded', function() {
