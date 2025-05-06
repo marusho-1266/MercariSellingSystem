@@ -15,11 +15,11 @@ function getDashboardSummary() {
   let totalProfit = 0;
   let salesCount = 0;
   for (let i = 1; i < salesData.length; i++) {
-    const price = Number(salesData[i][3]);
-    const fee = Number(salesData[i][4]);
-    const shipping = Number(salesData[i][5]);
+    const price = Number(salesData[i][4]);
+    const fee = Number(salesData[i][5]);
+    const shipping = Number(salesData[i][6]);
     // 商品IDから仕入れ価格取得
-    const productId = salesData[i][1];
+    const productId = salesData[i][2];
     let cost = 0;
     const productData = productSheet.getDataRange().getValues();
     for (let j = 1; j < productData.length; j++) {

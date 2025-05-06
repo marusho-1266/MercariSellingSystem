@@ -111,11 +111,28 @@ function registerProductAndInventory(product, inventory) {
   try {
     // 商品マスタ登録
     var productId = createProduct(product);
-    // 在庫管理登録
-    inventory.商品ID = productId;
-    createInventory(inventory);
+    // 在庫管理への登録処理は削除
     return productId;
   } catch (e) {
     throw new Error(e.message || e);
   }
+}
+
+// 商品マスタ一覧取得（商品ID＋商品名のみ返す）
+function getProductList() {
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+  const sheet = ss.getSheetByName('商品マスタ');
+  if (!sheet) throw new Error('商品マスタシートが存在しません');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const idIdx = headers.indexOf('商品ID');
+  const nameIdx = headers.indexOf('商品名');
+  const result = [];
+  for (let i = 1; i < data.length; i++) {
+    result.push({ 商品ID: data[i][idIdx], 商品名: data[i][nameIdx] });
+  }
+  return result;
 } 

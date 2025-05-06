@@ -178,16 +178,7 @@ function registerNewProduct(product, stock, status) {
     product.状態 || '',
     product.備考 || ''
   ]);
-  // ステータス選択（デフォルトは「出品可能」）
-  const validStatus = ['出品可能', '仕入中', '在庫切れ'];
-  let inventoryStatus = status && validStatus.includes(status) ? status : '出品可能';
-  // 在庫管理登録
-  inventorySheet.appendRow([
-    productId,
-    stock,
-    inventoryStatus,
-    Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss')
-  ]);
+  // 在庫管理への登録処理は削除
   return productId;
 }
 
@@ -247,7 +238,7 @@ function registerSale(listingId, saleInfo) {
   for (let i = 1; i < listingData.length; i++) {
     if (String(listingData[i][0]).trim() === String(listingId).trim()) {
       productId = listingData[i][1];
-      listingSheet.getRange(i+1, 5).setValue('完了');
+      listingSheet.getRange(i+1, 6).setValue('完了');
       break;
     }
   }
@@ -300,7 +291,20 @@ function registerPurchase(purchase) {
       break;
     }
   }
-  if (inventoryRowIdx === -1) throw new Error('該当する商品IDの在庫が見つかりません');
+  // 在庫管理に行がなければ新規追加
+  if (inventoryRowIdx === -1) {
+    // 初期在庫は仕入数、ステータスは在庫数>0なら「出品可能」それ以外は「仕入中」
+    const newStock = Number(purchase.仕入数);
+    const newStatus = newStock > 0 ? '出品可能' : '仕入中';
+    inventorySheet.appendRow([
+      purchase.商品ID,
+      newStock,
+      newStatus,
+      Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss')
+    ]);
+    inventoryRowIdx = inventorySheet.getLastRow();
+    currentStock = newStock;
+  }
 
   // 在庫数加算
   const newStock = currentStock + Number(purchase.仕入数);

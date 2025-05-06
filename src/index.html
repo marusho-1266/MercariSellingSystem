@@ -170,18 +170,6 @@
                 <label for="note" class="form-label">備考</label>
                 <input type="text" class="form-control" id="note">
               </div>
-              <div class="mb-3">
-                <label for="stock" class="form-label">在庫数<span class="text-danger">*</span></label>
-                <input type="number" class="form-control" id="stock" required>
-              </div>
-              <div class="mb-3">
-                <label for="inventoryStatus" class="form-label">ステータス</label>
-                <select class="form-select" id="inventoryStatus">
-                  <option value="出品可能">出品可能</option>
-                  <option value="仕入中">仕入中</option>
-                  <option value="在庫切れ">在庫切れ</option>
-                </select>
-              </div>
             </form>
             <div id="productRegisterError" class="text-danger"></div>
           </div>
@@ -501,19 +489,15 @@
         const salePrice = document.getElementById('productSalePrice').value; // ID変更
         const status = document.getElementById('status').value.trim();
         const note = document.getElementById('note').value.trim();
-        const stock = document.getElementById('stock').value;
-        const inventoryStatus = document.getElementById('inventoryStatus').value;
-
         // バリデーション
-        if (!name || !category || !costPrice || !salePrice || !stock) {
+        if (!name || !category || !costPrice || !salePrice) {
           document.getElementById('productRegisterError').textContent = '必須項目をすべて入力してください。';
           return;
         }
-        if (isNaN(costPrice) || isNaN(salePrice) || isNaN(stock)) {
-          document.getElementById('productRegisterError').textContent = '価格・在庫数は数値で入力してください。';
+        if (isNaN(costPrice) || isNaN(salePrice)) {
+          document.getElementById('productRegisterError').textContent = '価格は数値で入力してください。';
           return;
         }
-
         const product = {
           商品名: name,
           カテゴリ: category,
@@ -522,20 +506,13 @@
           状態: status,
           備考: note
         };
-        const inventory = {
-          在庫数: Number(stock),
-          ステータス: inventoryStatus
-        };
-
-        // GAS側の関数呼び出し
         google.script.run.withSuccessHandler(function(productId) {
-          // 成功時はモーダルを閉じてリセット
           const modal = bootstrap.Modal.getInstance(document.getElementById('productRegisterModal'));
           modal.hide();
           alert('商品登録が完了しました！\n商品ID: ' + productId);
         }).withFailureHandler(function(error) {
           document.getElementById('productRegisterError').textContent = error.message || error;
-        }).registerProductAndInventory(product, inventory);
+        }).registerProductAndInventory(product);
       }
       
       function showInventory() {
@@ -782,7 +759,7 @@
           });
         }).withFailureHandler(function(error) {
           select.innerHTML = '<option value="">商品リスト取得エラー</option>';
-        }).getInventoryList(); // 商品マスタ一覧取得用GAS関数
+        }).getProductList(); // ←ここをgetProductListに変更
         modal.show();
       }
       function submitPurchaseRegister() {
