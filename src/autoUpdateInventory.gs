@@ -291,7 +291,7 @@ function registerPurchase(purchase) {
       break;
     }
   }
-  // 在庫管理に行がなければ新規追加
+  let isNewInventory = false;
   if (inventoryRowIdx === -1) {
     // 初期在庫は仕入数、ステータスは在庫数>0なら「出品可能」それ以外は「仕入中」
     const newStock = Number(purchase.仕入数);
@@ -304,22 +304,24 @@ function registerPurchase(purchase) {
     ]);
     inventoryRowIdx = inventorySheet.getLastRow();
     currentStock = newStock;
+    isNewInventory = true;
   }
-
-  // 在庫数加算
-  const newStock = currentStock + Number(purchase.仕入数);
-  if (newStock < 0) throw new Error('在庫数が負の値になります');
-  inventorySheet.getRange(inventoryRowIdx, 2).setValue(newStock);
-  // ステータス自動遷移（在庫数>0なら「出品可能」）
-  const statusColIdx = inventoryHeaders.indexOf('ステータス');
-  if (statusColIdx !== -1) {
-    const newStatus = newStock > 0 ? '出品可能' : '仕入中';
-    inventorySheet.getRange(inventoryRowIdx, statusColIdx + 1).setValue(newStatus);
-  }
-  // 最終更新日も更新
-  const dateColIdx = inventoryHeaders.indexOf('最終更新日');
-  if (dateColIdx !== -1) {
-    inventorySheet.getRange(inventoryRowIdx, dateColIdx + 1).setValue(Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'));
+  // 既存行がある場合のみ在庫数加算
+  if (!isNewInventory) {
+    const newStock = currentStock + Number(purchase.仕入数);
+    if (newStock < 0) throw new Error('在庫数が負の値になります');
+    inventorySheet.getRange(inventoryRowIdx, 2).setValue(newStock);
+    // ステータス自動遷移（在庫数>0なら「出品可能」）
+    const statusColIdx = inventoryHeaders.indexOf('ステータス');
+    if (statusColIdx !== -1) {
+      const newStatus = newStock > 0 ? '出品可能' : '仕入中';
+      inventorySheet.getRange(inventoryRowIdx, statusColIdx + 1).setValue(newStatus);
+    }
+    // 最終更新日も更新
+    const dateColIdx = inventoryHeaders.indexOf('最終更新日');
+    if (dateColIdx !== -1) {
+      inventorySheet.getRange(inventoryRowIdx, dateColIdx + 1).setValue(Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'));
+    }
   }
 
   // 仕入ID発番
