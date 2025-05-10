@@ -58,7 +58,7 @@ function createSalesRecord(sales) {
 
 // 取引ステータス管理: 取引ステータスの更新
 function updateTransactionStatus(transactionId, newStatus) {
-  const validStatus = ['出品中', '売約済み', '発送待ち', '発送済み', '評価待ち', '取引完了'];
+  const validStatus = ['出品中', '売約済み', '発送待ち', '評価待ち', '取引完了'];
   if (!transactionId) throw new Error('取引IDは必須です');
   if (!validStatus.includes(newStatus)) throw new Error('不正なステータスです');
 

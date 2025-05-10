@@ -293,36 +293,11 @@ function registerPurchase(purchase) {
   }
   let isNewInventory = false;
   if (inventoryRowIdx === -1) {
-    // 初期在庫は仕入数、ステータスは在庫数>0なら「出品可能」それ以外は「仕入中」
-    const newStock = Number(purchase.仕入数);
-    const newStatus = newStock > 0 ? '出品可能' : '仕入中';
-    inventorySheet.appendRow([
-      purchase.商品ID,
-      newStock,
-      newStatus,
-      Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss')
-    ]);
-    inventoryRowIdx = inventorySheet.getLastRow();
-    currentStock = newStock;
-    isNewInventory = true;
+    // 在庫管理への新規追加・加算処理は削除
+    // ここでは何もしない
   }
-  // 既存行がある場合のみ在庫数加算
-  if (!isNewInventory) {
-    const newStock = currentStock + Number(purchase.仕入数);
-    if (newStock < 0) throw new Error('在庫数が負の値になります');
-    inventorySheet.getRange(inventoryRowIdx, 2).setValue(newStock);
-    // ステータス自動遷移（在庫数>0なら「出品可能」）
-    const statusColIdx = inventoryHeaders.indexOf('ステータス');
-    if (statusColIdx !== -1) {
-      const newStatus = newStock > 0 ? '出品可能' : '仕入中';
-      inventorySheet.getRange(inventoryRowIdx, statusColIdx + 1).setValue(newStatus);
-    }
-    // 最終更新日も更新
-    const dateColIdx = inventoryHeaders.indexOf('最終更新日');
-    if (dateColIdx !== -1) {
-      inventorySheet.getRange(inventoryRowIdx, dateColIdx + 1).setValue(Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'));
-    }
-  }
+  // 既存行がある場合も在庫数加算処理は削除
+  // ここでは何もしない
 
   // 仕入ID発番
   const purchaseId = 'S' + Date.now() + Math.floor(Math.random() * 1000);
@@ -378,29 +353,49 @@ function updatePurchase(purchaseId, updateFields) {
       break;
     }
   }
-  if (invRowIdx === -1) throw new Error('該当する商品IDの在庫が見つかりません');
+  // validateProductIdExists(oldProductId); // 商品マスタ存在チェックはOK
+  // 在庫管理の「該当する商品IDの在庫が見つかりません」エラーthrow部分は削除
 
-  validateProductIdExists(oldProductId);
-
-  // 仕入数の増減分を計算
+  // ステータス変更前の値を取得
+  const oldStatusColIdx = purchaseHeaders.indexOf('ステータス');
+  const oldStatus = oldStatusColIdx !== -1 ? purchaseData[rowIdx-1][oldStatusColIdx] : '';
+  let newStatus = updateFields.ステータス !== undefined ? updateFields.ステータス : oldStatus;
   let newQty = updateFields.仕入数 !== undefined ? Number(updateFields.仕入数) : oldQty;
-  if (isNaN(newQty) || newQty <= 0 || !Number.isInteger(newQty)) throw new Error('仕入数は1以上の整数で入力してください');
-  if (updateFields.仕入価格 !== undefined && (isNaN(Number(updateFields.仕入価格)) || Number(updateFields.仕入価格) < 0)) throw new Error('仕入価格は0以上の数値で入力してください');
-  let diff = newQty - oldQty;
-  // 在庫数調整
-  if (currentStock + diff < 0) throw new Error('在庫数が負の値になります');
-  inventorySheet.getRange(invRowIdx, 2).setValue(currentStock + diff);
-  // ステータス自動遷移
-  const statusColIdx = inventoryHeaders.indexOf('ステータス');
-  if (statusColIdx !== -1) {
-    const newStock = currentStock + diff;
-    const newStatus = newStock > 0 ? '出品可能' : '仕入中';
-    inventorySheet.getRange(invRowIdx, statusColIdx + 1).setValue(newStatus);
-  }
-  // 最終更新日も更新
-  const dateColIdx = inventoryHeaders.indexOf('最終更新日');
-  if (dateColIdx !== -1) {
-    inventorySheet.getRange(invRowIdx, dateColIdx + 1).setValue(Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'));
+
+  // ステータスが「仕入中」→「完了」に変わった場合のみ在庫管理に加算
+  if (oldStatus === '仕入中' && newStatus === '完了') {
+    // 在庫管理シートに行がなければ新規追加、あれば加算
+    let found = false;
+    for (let i = 1; i < inventoryData.length; i++) {
+      if (inventoryData[i][0] === oldProductId) {
+        // 既存行：在庫数加算
+        const currentStock = Number(inventoryData[i][1]);
+        const newStock = currentStock + newQty;
+        inventorySheet.getRange(i+1, 2).setValue(newStock);
+        // ステータス自動遷移
+        const statusColIdx = inventoryHeaders.indexOf('ステータス');
+        if (statusColIdx !== -1) {
+          const status = newStock > 0 ? '出品可能' : '仕入中';
+          inventorySheet.getRange(i+1, statusColIdx+1).setValue(status);
+        }
+        // 最終更新日も更新
+        const dateColIdx = inventoryHeaders.indexOf('最終更新日');
+        if (dateColIdx !== -1) {
+          inventorySheet.getRange(i+1, dateColIdx+1).setValue(Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'));
+        }
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      // 新規追加
+      inventorySheet.appendRow([
+        oldProductId,
+        newQty,
+        newQty > 0 ? '出品可能' : '仕入中',
+        Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss')
+      ]);
+    }
   }
 
   // 仕入管理シートの該当行を更新
@@ -479,30 +474,73 @@ function deletePurchase(purchaseId) {
 
 // 仕入リスト取得: 仕入管理シートの履歴一覧取得
 function getPurchaseList() {
+  Logger.log('getPurchaseList開始');
   const properties = PropertiesService.getScriptProperties();
   const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
   if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
   const ss = SpreadsheetApp.openById(ssId);
   const purchaseSheet = ss.getSheetByName('仕入管理');
   if (!purchaseSheet) throw new Error('仕入管理シートが存在しません');
-  const data = purchaseSheet.getDataRange().getValues();
-  if (data.length < 2) return [];
-  const headers = data[0];
-  const list = [];
-  for (let i = 1; i < data.length; i++) {
-    const rowData = data[i];
-    // 空行スキップ
-    if (rowData.every(cell => cell === '' || cell === null)) continue;
-    const row = {};
-    headers.forEach((h, idx) => {
-      let value = rowData[idx];
-      // Date型は文字列化
-      if (value instanceof Date) {
-        value = Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy/MM/dd HH:mm:ss');
-      }
-      row[h] = value;
-    });
-    list.push(row);
+  const purchaseData = purchaseSheet.getDataRange().getValues();
+  const purchaseHeaders = purchaseData[0];
+  
+  Logger.log('仕入管理シート行数: ' + purchaseData.length);
+  
+  // 商品マスタから商品名を取得するための準備
+  const productSheet = ss.getSheetByName('商品マスタ');
+  if (!productSheet) throw new Error('商品マスタシートが存在しません');
+  const productData = productSheet.getDataRange().getValues();
+  const productHeaders = productData[0];
+  const productIdIdx = productHeaders.indexOf('商品ID');
+  const productNameIdx = productHeaders.indexOf('商品名');
+  
+  // 商品IDから商品名を取得しやすいようにマップを作成
+  const productMap = {};
+  for (let i = 1; i < productData.length; i++) {
+    if (productData[i][productIdIdx]) {
+      productMap[productData[i][productIdIdx]] = productData[i][productNameIdx];
+    }
   }
-  return list;
+  Logger.log('商品マスタから商品マップ作成: ' + Object.keys(productMap).length + '件');
+  
+  const result = [];
+  const productIdColIdx = purchaseHeaders.indexOf('商品ID');
+  
+  if (productIdColIdx === -1) {
+    Logger.log('仕入管理シートに商品ID列が見つかりません');
+    throw new Error('仕入管理シートのフォーマットが不正です: 商品ID列がありません');
+  }
+  
+  for (let i = 1; i < purchaseData.length; i++) {
+    // 空行チェック（すべてのセルが空かnullかチェック）
+    if (purchaseData[i].every(cell => cell === '' || cell === null)) {
+      Logger.log('空行をスキップ: ' + i);
+      continue;
+    }
+    
+    const row = {};
+    for (let j = 0; j < purchaseHeaders.length; j++) {
+      row[purchaseHeaders[j]] = purchaseData[i][j];
+    }
+    
+    // 商品名を追加
+    const productId = purchaseData[i][productIdColIdx];
+    Logger.log('処理中の商品ID: ' + productId);
+    
+    if (productId && productMap[productId]) {
+      row['商品名'] = productMap[productId];
+      Logger.log('商品名を設定: ' + row['商品名']);
+    } else {
+      row['商品名'] = '不明';
+      Logger.log('商品名が見つからないため不明を設定');
+    }
+    
+    // ログ出力
+    Logger.log('仕入データ追加: ' + JSON.stringify(row));
+    
+    result.push(row);
+  }
+  
+  Logger.log('取得結果件数: ' + result.length);
+  return result;
 } 

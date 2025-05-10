@@ -74,6 +74,28 @@ function getListingList() {
       Logger.log('Error: 出品管理シートが存在しません');
       throw new Error('出品管理シートが存在しません');
     }
+    
+    // 商品マスタから商品名を取得するための準備
+    const productSheet = ss.getSheetByName('商品マスタ');
+    if (!productSheet) {
+      Logger.log('Error: 商品マスタシートが存在しません');
+      throw new Error('商品マスタシートが存在しません');
+    }
+    const productData = productSheet.getDataRange().getValues();
+    const productHeaders = productData[0];
+    const productIdIdx = productHeaders.indexOf('商品ID');
+    const productNameIdx = productHeaders.indexOf('商品名');
+    
+    // 商品IDから商品名を取得する関数
+    function getProductName(productId) {
+      for (let i = 1; i < productData.length; i++) {
+        if (productData[i][productIdIdx] === productId) {
+          return productData[i][productNameIdx];
+        }
+      }
+      return '';
+    }
+    
     const data = sheet.getDataRange().getValues();
     Logger.log('Raw data length from 出品管理 sheet: ' + data.length);
     if (data.length < 2) {
@@ -82,11 +104,19 @@ function getListingList() {
     }
     const headers = data[0];
     Logger.log('Headers: ' + JSON.stringify(headers));
+    const productIdColIdx = headers.indexOf('商品ID');
+    
     const list = [];
     for (let i = 1; i < data.length; i++) {
       const rowData = data[i];
+      
+      // 空行スキップ（すべてのセルが空かnullかチェック）
+      if (rowData.every(cell => cell === '' || cell === null)) {
+        Logger.log('空行をスキップ: ' + i);
+        continue;
+      }
+      
       Logger.log('Processing rowData: ' + JSON.stringify(rowData)); // Log raw row data
-      // 必要であれば空行をスキップするチェックを追加: if (rowData.every(cell => cell === '')) continue;
       const row = {};
       headers.forEach((h, idx) => {
         let value = rowData[idx];
@@ -96,6 +126,13 @@ function getListingList() {
         }
         row[h] = value;
       });
+      
+      // 商品名を追加
+      if (productIdColIdx !== -1) {
+        const productId = rowData[productIdColIdx];
+        row['商品名'] = getProductName(productId);
+      }
+      
       Logger.log('Constructed row object: ' + JSON.stringify(row)); // Log constructed object
       list.push(row);
     }

@@ -94,6 +94,19 @@
       </div>
       
       <div class="row">
+        <!-- 出品管理 -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">出品管理</h5>
+            </div>
+            <div class="card-body">
+              <button class="btn btn-secondary" onclick="showListingForm()">出品登録</button>
+              <button class="btn btn-info ms-2" onclick="showListingList()">出品一覧</button>
+            </div>
+          </div>
+        </div>
+        
         <!-- 販売管理 -->
         <div class="col-md-6">
           <div class="card">
@@ -106,7 +119,9 @@
             </div>
           </div>
         </div>
-        
+      </div>
+      
+      <div class="row">
         <!-- 財務管理 -->
         <div class="col-md-6">
           <div class="card">
@@ -115,21 +130,6 @@
             </div>
             <div class="card-body">
               <button class="btn btn-warning" onclick="showFinance()">財務レポート</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <!-- 出品管理 -->
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="card-title mb-0">出品管理</h5>
-            </div>
-            <div class="card-body">
-              <button class="btn btn-secondary" onclick="showListingForm()">出品登録</button>
-              <button class="btn btn-info ms-2" onclick="showListingList()">出品一覧</button>
             </div>
           </div>
         </div>
@@ -309,6 +309,7 @@
                   <tr>
                     <th>出品ID</th>
                     <th>商品ID</th>
+                    <th>商品名</th>
                     <th>出品日</th>
                     <th>出品価格</th>
                     <th>出品数</th>
@@ -369,9 +370,9 @@
               <div class="mb-3">
                 <label for="saleStatus" class="form-label">取引ステータス</label>
                 <select class="form-select" id="saleStatus">
-                  <option value="売約済み">売約済み</option>
                   <option value="発送待ち">発送待ち</option>
-                  <option value="完了">完了</option>
+                  <option value="評価待ち">評価待ち</option>
+                  <option value="取引完了">取引完了</option>
                 </select>
               </div>
             </form>
@@ -416,8 +417,8 @@
               <div class="mb-3">
                 <label for="purchaseStatus" class="form-label">ステータス</label>
                 <select class="form-select" id="purchaseStatus">
-                  <option value="完了">完了</option>
                   <option value="仕入中">仕入中</option>
+                  <option value="完了">完了</option>
                   <option value="キャンセル">キャンセル</option>
                 </select>
               </div>
@@ -451,6 +452,7 @@
                   <tr>
                     <th>仕入ID</th>
                     <th>商品ID</th>
+                    <th>商品名</th>
                     <th>仕入日</th>
                     <th>仕入数</th>
                     <th>仕入価格</th>
@@ -510,6 +512,7 @@
           const modal = bootstrap.Modal.getInstance(document.getElementById('productRegisterModal'));
           modal.hide();
           alert('商品登録が完了しました！\n商品ID: ' + productId);
+          updateDashboard(); // ダッシュボード更新
         }).withFailureHandler(function(error) {
           document.getElementById('productRegisterError').textContent = error.message || error;
         }).registerProductAndInventory(product);
@@ -547,36 +550,13 @@
       
       function showSales() {
         const modal = new bootstrap.Modal(document.getElementById('salesListModal'));
-        document.getElementById('salesListError').textContent = '';
-        const tbody = document.querySelector('#salesListTable tbody');
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center">読み込み中...</td></tr>';
         google.script.run.withSuccessHandler(function(list) {
-          if (!list || list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center">データがありません</td></tr>';
-            return;
-          }
-          tbody.innerHTML = '';
-          list.forEach(function(item) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td>${item.取引ID}</td>
-              <td>${item.商品ID}</td>
-              <td>${item.商品名}</td>
-              <td>${item.カテゴリ}</td>
-              <td>${item.販売日}</td>
-              <td>${item.販売価格}</td>
-              <td>${item.販売手数料}</td>
-              <td>${item.送料}</td>
-              <td>${item.購入者情報}</td>
-              <td>${item.取引ステータス}</td>
-            `;
-            tbody.appendChild(tr);
-          });
+          renderSalesTable(list);
+          modal.show();
         }).withFailureHandler(function(error) {
-          tbody.innerHTML = '';
           document.getElementById('salesListError').textContent = error.message || error;
+          modal.show();
         }).getSalesList();
-        modal.show();
       }
       
       function showFinance() {
@@ -636,6 +616,7 @@
           const modal = bootstrap.Modal.getInstance(document.getElementById('listingRegisterModal'));
           modal.hide();
           alert('出品登録が完了しました！\n出品ID: ' + listingId);
+          updateDashboard(); // ダッシュボード更新
         }).withFailureHandler(function(error) {
           document.getElementById('listingRegisterError').textContent = error.message || error;
         }).registerListing(listing);
@@ -645,11 +626,11 @@
         const modal = new bootstrap.Modal(document.getElementById('listingListModal'));
         document.getElementById('listingListError').textContent = '';
         const tbody = document.querySelector('#listingListTable tbody');
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">読み込み中...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">読み込み中...</td></tr>';
         google.script.run.withSuccessHandler(function(list) {
           console.log('Received data in frontend:', list); // ← 追加：フロントエンドで受け取ったデータを確認
           if (!list || list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">データがありません</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">データがありません</td></tr>';
             return;
           }
           tbody.innerHTML = '';
@@ -658,6 +639,7 @@
             tr.innerHTML = `
               <td>${item.出品ID}</td>
               <td>${item.商品ID}</td>
+              <td>${item.商品名 || ''}</td>
               <td>${item.出品日}</td>
               <td>${item.出品価格}</td>
               <td>${item.出品数}</td>
@@ -733,6 +715,7 @@
           const modal = bootstrap.Modal.getInstance(document.getElementById('saleRegisterModal'));
           modal.hide();
           alert('販売登録が完了しました！\n取引ID: ' + saleId);
+          updateDashboard(); // ダッシュボード更新
         }).withFailureHandler(function(error) {
           document.getElementById('saleRegisterError').textContent = error.message || error;
         }).registerSale(listingId, saleInfo);
@@ -789,6 +772,7 @@
           const modal = bootstrap.Modal.getInstance(document.getElementById('purchaseRegisterModal'));
           modal.hide();
           alert('仕入登録が完了しました！\n仕入ID: ' + purchaseId);
+          updateDashboard(); // ダッシュボード更新
         }).withFailureHandler(function(error) {
           document.getElementById('purchaseRegisterError').textContent = error.message || error;
         }).registerPurchase(purchase);
@@ -798,7 +782,7 @@
         const modal = new bootstrap.Modal(document.getElementById('purchaseListModal'));
         document.getElementById('purchaseListError').textContent = '';
         const tbody = document.querySelector('#purchaseListTable tbody');
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">読み込み中...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">読み込み中...</td></tr>';
         google.script.run.withSuccessHandler(function(list) {
           renderPurchaseListTable(list);
         }).withFailureHandler(function(error) {
@@ -812,7 +796,7 @@
       function renderPurchaseListTable(list) {
         const tbody = document.querySelector('#purchaseListTable tbody');
         if (!list || list.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center">データがありません</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center">データがありません</td></tr>';
           return;
         }
         tbody.innerHTML = '';
@@ -827,6 +811,7 @@
           tr.innerHTML = `
             <td>${item.仕入ID}</td>
             <td>${item.商品ID}</td>
+            <td>${item.商品名}</td>
             <td>${item.仕入日}</td>
             <td>${item.仕入数}</td>
             <td>${item.仕入価格}</td>
@@ -860,18 +845,71 @@
         }).updatePurchase(purchaseId, { 'ステータス': newStatus });
       }
 
-      window.addEventListener('DOMContentLoaded', function() {
-        // ダッシュボードサマリー取得
-        if (google && google.script && google.script.run) {
-          google.script.run.withSuccessHandler(function(summary) {
-            document.getElementById('summaryTotalSales').textContent = summary.totalSales.toLocaleString() + ' 円';
-            document.getElementById('summarySalesCount').textContent = summary.salesCount + ' 件';
-            document.getElementById('summaryTotalProfit').textContent = summary.totalProfit.toLocaleString() + ' 円';
-            document.getElementById('summaryTotalStock').textContent = summary.totalStock + ' 個';
-            document.getElementById('summaryOutOfStockCount').textContent = summary.outOfStockCount + ' 件';
-            document.getElementById('summaryListedCount').textContent = summary.listedCount + ' 件';
-          }).getDashboardSummary();
+      function renderSalesTable(salesList) {
+        const tbody = document.getElementById('salesListTable').getElementsByTagName('tbody')[0];
+        tbody.innerHTML = '';  // クリア
+        if (!salesList || salesList.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="10" class="text-center">データがありません</td></tr>';
+          return;
         }
+        
+        salesList.forEach(function(sale) {
+          const tr = document.createElement('tr');
+          const statusOptions = ['発送待ち', '評価待ち', '取引完了'];
+          let statusSelect = `<select class='form-select form-select-sm' data-sale-id='${sale.取引ID}' onchange='handleSaleStatusChange(event)'>`;
+          statusOptions.forEach(function(opt) {
+            statusSelect += `<option value='${opt}'${sale.取引ステータス === opt ? ' selected' : ''}>${opt}</option>`;
+          });
+          statusSelect += '</select>';
+          
+          tr.innerHTML = `
+            <td>${sale.取引ID}</td>
+            <td>${sale.商品ID}</td>
+            <td>${sale.商品名}</td>
+            <td>${sale.カテゴリ}</td>
+            <td>${sale.販売日}</td>
+            <td>${sale.販売価格}</td>
+            <td>${sale.販売手数料}</td>
+            <td>${sale.送料}</td>
+            <td>${sale.購入者情報 || ''}</td>
+            <td>${statusSelect}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      
+      function handleSaleStatusChange(event) {
+        const select = event.target;
+        const saleId = select.getAttribute('data-sale-id');
+        const newStatus = select.value;
+        
+        // GAS連携
+        google.script.run.withSuccessHandler(function() {
+          // 成功時は何もしない
+        }).withFailureHandler(function(error) {
+          alert('ステータス更新エラー: ' + (error.message || error));
+          // エラー時はリスト再取得
+          showSales();
+        }).updateTransactionStatus(saleId, newStatus);
+      }
+
+      // ダッシュボード更新
+      function updateDashboard() {
+        google.script.run.withSuccessHandler(function(summary) {
+          document.getElementById('summaryTotalSales').textContent = summary.totalSales.toLocaleString() + '円';
+          document.getElementById('summarySalesCount').textContent = summary.salesCount + '件';
+          document.getElementById('summaryTotalProfit').textContent = summary.totalProfit.toLocaleString() + '円';
+          document.getElementById('summaryTotalStock').textContent = summary.totalStock + '個';
+          document.getElementById('summaryOutOfStockCount').textContent = summary.outOfStockCount + '件';
+          document.getElementById('summaryListedCount').textContent = summary.listedCount + '件';
+        }).withFailureHandler(function(error) {
+          console.error('ダッシュボード更新エラー:', error);
+        }).getDashboardSummary();
+      }
+
+      // 画面初期化時にダッシュボード更新
+      window.addEventListener('DOMContentLoaded', function() {
+        updateDashboard();
       });
     </script>
   </body>
