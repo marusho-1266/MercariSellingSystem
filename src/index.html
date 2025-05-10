@@ -628,23 +628,31 @@
         const tbody = document.querySelector('#listingListTable tbody');
         tbody.innerHTML = '<tr><td colspan="8" class="text-center">読み込み中...</td></tr>';
         google.script.run.withSuccessHandler(function(list) {
-          console.log('Received data in frontend:', list); // ← 追加：フロントエンドで受け取ったデータを確認
+          console.log('出品一覧データ受信:', list ? JSON.stringify(list) : 'null');
           if (!list || list.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" class="text-center">データがありません</td></tr>';
             return;
           }
+          
+          console.log('表示対象データ件数:', list.length);
+          
           tbody.innerHTML = '';
-          list.forEach(function(item) {
+          list.forEach(function(item, index) {
+            console.log(`出品データ ${index+1}:`, JSON.stringify(item));
+            
+            // 安全なデータ表示（undefinedの場合は空文字に）
+            const safeValue = (val) => val !== undefined && val !== null ? val : '';
+            
             const tr = document.createElement('tr');
             tr.innerHTML = `
-              <td>${item.出品ID}</td>
-              <td>${item.商品ID}</td>
-              <td>${item.商品名 || ''}</td>
-              <td>${item.出品日}</td>
-              <td>${item.出品価格}</td>
-              <td>${item.出品数}</td>
-              <td>${item.ステータス}</td>
-              <td>${item.備考 || ''}</td>
+              <td>${safeValue(item.出品ID)}</td>
+              <td>${safeValue(item.商品ID)}</td>
+              <td>${safeValue(item.商品名)}</td>
+              <td>${safeValue(item.出品日)}</td>
+              <td>${safeValue(item.出品価格)}</td>
+              <td>${safeValue(item.出品数)}</td>
+              <td>${safeValue(item.ステータス)}</td>
+              <td>${safeValue(item.備考)}</td>
             `;
             tbody.appendChild(tr);
           });
@@ -794,29 +802,64 @@
 
       // tbody描画だけ分離
       function renderPurchaseListTable(list) {
+        console.log('仕入一覧データ受信:', list ? JSON.stringify(list) : 'null'); // 文字列化して確実に出力
         const tbody = document.querySelector('#purchaseListTable tbody');
         if (!list || list.length === 0) {
+          console.log('仕入一覧データなし');
           tbody.innerHTML = '<tr><td colspan="8" class="text-center">データがありません</td></tr>';
           return;
         }
+        
+        console.log('表示対象データ件数:', list.length);
+        
         tbody.innerHTML = '';
-        list.forEach(function(item) {
+        list.forEach(function(item, index) {
+          console.log(`仕入データ ${index+1}:`, JSON.stringify(item)); // 文字列化して確実に出力
+          
+          // ステータス処理の改善
+          let status = item.ステータス;
+          // undefined/nullチェック
+          if (status === undefined || status === null) {
+            console.log(`データ ${index+1} のステータスが未定義です`);
+            status = '不明';
+          } else {
+            console.log(`ステータス: "${status}", 型: ${typeof status}`);
+          }
+          
           const tr = document.createElement('tr');
           const statusOptions = ['完了', '仕入中', 'キャンセル'];
-          let statusSelect = `<select class='form-select form-select-sm' data-purchase-id='${item.仕入ID}' onchange='handlePurchaseStatusChange(event)'>`;
+          
+          // セレクトボックスを作成
+          let statusSelect = `<select class='form-select form-select-sm' data-purchase-id='${item.仕入ID || ""}' onchange='handlePurchaseStatusChange(event)'>`;
+          
+          // 現在のステータスが含まれているかチェック
+          let statusFound = false;
           statusOptions.forEach(function(opt) {
-            statusSelect += `<option value='${opt}'${item.ステータス === opt ? ' selected' : ''}>${opt}</option>`;
+            const isSelected = status === opt;
+            if (isSelected) statusFound = true;
+            statusSelect += `<option value='${opt}'${isSelected ? ' selected' : ''}>${opt}</option>`;
           });
+          
+          // 現在のステータスがリストにない場合は追加
+          if (!statusFound && status) {
+            console.log(`未知のステータスを検出: ${status}`);
+            statusSelect += `<option value='${status}' selected>${status}</option>`;
+          }
+          
           statusSelect += '</select>';
+          
+          // 安全なデータ表示（undefinedの場合は空文字に）
+          const safeValue = (val) => val !== undefined && val !== null ? val : '';
+          
           tr.innerHTML = `
-            <td>${item.仕入ID}</td>
-            <td>${item.商品ID}</td>
-            <td>${item.商品名}</td>
-            <td>${item.仕入日}</td>
-            <td>${item.仕入数}</td>
-            <td>${item.仕入価格}</td>
+            <td>${safeValue(item.仕入ID)}</td>
+            <td>${safeValue(item.商品ID)}</td>
+            <td>${safeValue(item.商品名)}</td>
+            <td>${safeValue(item.仕入日)}</td>
+            <td>${safeValue(item.仕入数)}</td>
+            <td>${safeValue(item.仕入価格)}</td>
             <td>${statusSelect}</td>
-            <td>${item.備考 || ''}</td>
+            <td>${safeValue(item.備考)}</td>
           `;
           tbody.appendChild(tr);
         });

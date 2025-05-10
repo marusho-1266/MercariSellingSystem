@@ -261,6 +261,7 @@ function registerSale(listingId, saleInfo) {
 
 // 仕入登録: 仕入管理シートに履歴追加、在庫数加算、ステータス自動遷移
 function registerPurchase(purchase) {
+  Logger.log('仕入登録開始: ' + JSON.stringify(purchase));
   // 必須バリデーション
   validateProductIdExists(purchase.商品ID);
   if (!purchase.商品ID) throw new Error('商品IDは必須です');
@@ -301,16 +302,31 @@ function registerPurchase(purchase) {
 
   // 仕入ID発番
   const purchaseId = 'S' + Date.now() + Math.floor(Math.random() * 1000);
+  
+  // ステータス確認（未設定なら「仕入中」をデフォルト値とする）
+  let status = purchase.ステータス;
+  if (!status || status === undefined || status === null || status === '') {
+    Logger.log('ステータスが未設定または空のため「仕入中」を設定します');
+    status = '仕入中';
+  } else {
+    Logger.log('指定されたステータス: ' + status);
+  }
+  
   // 仕入管理シートに履歴追加
-  purchaseSheet.appendRow([
+  const rowData = [
     purchaseId,
     purchase.商品ID,
     purchase.仕入日,
     Number(purchase.仕入数),
     Number(purchase.仕入価格),
-    purchase.ステータス || '完了',
+    status, // 明示的にstatusを使用
     purchase.備考 || ''
-  ]);
+  ];
+  
+  Logger.log('追加する仕入データ: ' + JSON.stringify(rowData));
+  purchaseSheet.appendRow(rowData);
+  
+  Logger.log('仕入登録完了: ID=' + purchaseId);
   return purchaseId;
 }
 
@@ -485,6 +501,13 @@ function getPurchaseList() {
   const purchaseHeaders = purchaseData[0];
   
   Logger.log('仕入管理シート行数: ' + purchaseData.length);
+  Logger.log('仕入管理シートヘッダー: ' + JSON.stringify(purchaseHeaders));
+  
+  // 空の配列をチェック
+  if (purchaseData.length <= 1) {
+    Logger.log('仕入データがありません（ヘッダーのみ）');
+    return [];
+  }
   
   // 商品マスタから商品名を取得するための準備
   const productSheet = ss.getSheetByName('商品マスタ');
@@ -505,27 +528,58 @@ function getPurchaseList() {
   
   const result = [];
   const productIdColIdx = purchaseHeaders.indexOf('商品ID');
+  const statusColIdx = purchaseHeaders.indexOf('ステータス');
+  
+  Logger.log('仕入管理シートの商品ID列インデックス: ' + productIdColIdx);
+  Logger.log('仕入管理シートのステータス列インデックス: ' + statusColIdx);
   
   if (productIdColIdx === -1) {
     Logger.log('仕入管理シートに商品ID列が見つかりません');
     throw new Error('仕入管理シートのフォーマットが不正です: 商品ID列がありません');
   }
   
+  // 各行のステータスをカウント
+  const statusCount = {};
+  for (let i = 1; i < purchaseData.length; i++) {
+    // 空行チェック
+    if (purchaseData[i].every(cell => cell === '' || cell === null || cell === undefined)) {
+      Logger.log('空行をスキップ: ' + i);
+      continue;
+    }
+    
+    // ステータスカウント
+    if (statusColIdx >= 0) {
+      const status = purchaseData[i][statusColIdx];
+      if (status) {
+        statusCount[status] = (statusCount[status] || 0) + 1;
+        Logger.log('ステータス検出: ' + status);
+      } else {
+        Logger.log('ステータスなし行: ' + i);
+      }
+    }
+  }
+  Logger.log('ステータス別件数: ' + JSON.stringify(statusCount));
+  
   for (let i = 1; i < purchaseData.length; i++) {
     // 空行チェック（すべてのセルが空かnullかチェック）
-    if (purchaseData[i].every(cell => cell === '' || cell === null)) {
+    if (purchaseData[i].every(cell => cell === '' || cell === null || cell === undefined)) {
       Logger.log('空行をスキップ: ' + i);
       continue;
     }
     
     const row = {};
     for (let j = 0; j < purchaseHeaders.length; j++) {
-      row[purchaseHeaders[j]] = purchaseData[i][j];
+      let cellValue = purchaseData[i][j];
+      // 日付オブジェクトであれば、指定のフォーマットで文字列に変換
+      if (purchaseHeaders[j] === '仕入日' && cellValue instanceof Date) {
+        cellValue = Utilities.formatDate(cellValue, Session.getScriptTimeZone(), 'yyyy/MM/dd');
+      }
+      row[purchaseHeaders[j]] = cellValue;
     }
     
     // 商品名を追加
     const productId = purchaseData[i][productIdColIdx];
-    Logger.log('処理中の商品ID: ' + productId);
+    Logger.log('処理中の行: ' + i + ', 商品ID: ' + productId + ', ステータス: ' + (statusColIdx >= 0 ? purchaseData[i][statusColIdx] : '不明'));
     
     if (productId && productMap[productId]) {
       row['商品名'] = productMap[productId];
@@ -542,5 +596,23 @@ function getPurchaseList() {
   }
   
   Logger.log('取得結果件数: ' + result.length);
+  
+  // 最終的な結果セットのステータス分布を確認
+  const resultStatusCount = {};
+  result.forEach(item => {
+    if (item.ステータス) {
+      resultStatusCount[item.ステータス] = (resultStatusCount[item.ステータス] || 0) + 1;
+    } else {
+      resultStatusCount['未定義'] = (resultStatusCount['未定義'] || 0) + 1;
+    }
+  });
+  Logger.log('結果セットのステータス別件数: ' + JSON.stringify(resultStatusCount));
+  
+  // 最初の数件を詳細ログ出力
+  const detailCount = Math.min(result.length, 5);
+  for (let i = 0; i < detailCount; i++) {
+    Logger.log('結果データ詳細 [' + i + ']: ' + JSON.stringify(result[i]));
+  }
+  
   return result;
 } 

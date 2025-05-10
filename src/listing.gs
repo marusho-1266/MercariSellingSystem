@@ -86,15 +86,15 @@ function getListingList() {
     const productIdIdx = productHeaders.indexOf('商品ID');
     const productNameIdx = productHeaders.indexOf('商品名');
     
-    // 商品IDから商品名を取得する関数
-    function getProductName(productId) {
-      for (let i = 1; i < productData.length; i++) {
-        if (productData[i][productIdIdx] === productId) {
-          return productData[i][productNameIdx];
-        }
+    // 商品IDから商品名を取得しやすいようにマップを作成
+    const productMap = {};
+    for (let i = 1; i < productData.length; i++) {
+      if (productData[i][productIdIdx]) {
+        productMap[productData[i][productIdIdx]] = productData[i][productNameIdx];
+        Logger.log('商品ID: ' + productData[i][productIdIdx] + ' → 商品名: ' + productData[i][productNameIdx]);
       }
-      return '';
     }
+    Logger.log('商品マスタマップ作成完了: ' + Object.keys(productMap).length + '件');
     
     const data = sheet.getDataRange().getValues();
     Logger.log('Raw data length from 出品管理 sheet: ' + data.length);
@@ -130,7 +130,13 @@ function getListingList() {
       // 商品名を追加
       if (productIdColIdx !== -1) {
         const productId = rowData[productIdColIdx];
-        row['商品名'] = getProductName(productId);
+        if (productId && productMap[productId]) {
+          row['商品名'] = productMap[productId];
+          Logger.log('商品名を設定: ' + row['商品名'] + ' (商品ID: ' + productId + ')');
+        } else {
+          row['商品名'] = '不明';
+          Logger.log('商品名が見つからないため不明を設定 (商品ID: ' + productId + ')');
+        }
       }
       
       Logger.log('Constructed row object: ' + JSON.stringify(row)); // Log constructed object
