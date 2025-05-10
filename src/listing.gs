@@ -59,9 +59,9 @@ function registerListing(listing) {
 }
 
 // 出品一覧取得関数: 出品管理シートの全データを配列で返す
-function getListingList() {
+function getListingList(filterStatus) {
   try { // エラーハンドリングを追加
-    Logger.log('getListingList started.');
+    Logger.log('getListingList started. filterStatus: ' + filterStatus);
     const properties = PropertiesService.getScriptProperties();
     const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
     if (!ssId) {
@@ -105,6 +105,7 @@ function getListingList() {
     const headers = data[0];
     Logger.log('Headers: ' + JSON.stringify(headers));
     const productIdColIdx = headers.indexOf('商品ID');
+    const statusColIdx = headers.indexOf('ステータス');
     
     const list = [];
     for (let i = 1; i < data.length; i++) {
@@ -114,6 +115,15 @@ function getListingList() {
       if (rowData.every(cell => cell === '' || cell === null)) {
         Logger.log('空行をスキップ: ' + i);
         continue;
+      }
+      
+      // ステータスでフィルタリング
+      if (filterStatus && statusColIdx !== -1) {
+        const status = rowData[statusColIdx];
+        if (status !== filterStatus) {
+          Logger.log(`行 ${i+1} はステータス「${status}」なので、フィルター「${filterStatus}」に一致せずスキップします`);
+          continue;
+        }
       }
       
       Logger.log('Processing rowData: ' + JSON.stringify(rowData)); // Log raw row data
@@ -144,7 +154,7 @@ function getListingList() {
     }
     // Log the final list just before returning
     try {
-      Logger.log('Final list being returned: ' + JSON.stringify(list));
+      Logger.log('Final list being returned: ' + list.length + ' 件');
     } catch (stringifyError) {
       Logger.log('Error stringifying final list: ' + stringifyError.message);
       // If stringify fails here, that's a big clue

@@ -42,7 +42,8 @@ function doGet(e) {
 }
 
 // 在庫一覧データ取得（商品マスタJOIN）
-function getInventoryList() {
+function getInventoryList(filterStatus) {
+  Logger.log('getInventoryList開始 filterStatus:' + filterStatus);
   const properties = PropertiesService.getScriptProperties();
   const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
   if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
@@ -68,21 +69,29 @@ function getInventoryList() {
     const row = inventoryData[i];
     const productId = String(row[0]).trim();
     if (!productId) continue;
+    
+    // ステータスの絞り込み条件が指定されている場合、一致するものだけ追加
+    const status = String(row[2]).trim();
+    if (filterStatus && status !== filterStatus) {
+      continue;
+    }
+    
     result.push({
       商品ID: productId,
       商品名: productMap[productId] ? productMap[productId].商品名 : '',
       カテゴリ: productMap[productId] ? productMap[productId].カテゴリ : '',
       在庫数: String(row[1]).trim(),
-      ステータス: String(row[2]).trim(),
+      ステータス: status,
       最終更新日: String(row[3]).trim()
     });
   }
-  Logger.log(result);
+  Logger.log('結果件数: ' + result.length + ' 件');
   return result;
 }
 
 // 販売一覧データ取得（商品マスタJOIN）
-function getSalesList() {
+function getSalesList(filterStatus) {
+  Logger.log('getSalesList開始 filterStatus:' + filterStatus);
   const properties = PropertiesService.getScriptProperties();
   const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
   if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
@@ -114,6 +123,14 @@ function getSalesList() {
     const row = salesData[i];
     // 空行スキップ
     if (row.every(cell => cell === '' || cell === null)) continue;
+    
+    // 取引ステータスで絞り込み
+    const statusIdx = idx('取引ステータス');
+    if (filterStatus && statusIdx !== -1) {
+      const status = row[statusIdx];
+      if (status !== filterStatus) continue;
+    }
+    
     const productId = row[idx('商品ID')];
     let saleDate = row[idx('販売日')];
     if (saleDate instanceof Date) {
@@ -133,6 +150,7 @@ function getSalesList() {
       取引ステータス: row[idx('取引ステータス')]
     });
   }
+  Logger.log('結果件数: ' + result.length + ' 件');
   return result;
 }
 
@@ -489,8 +507,8 @@ function deletePurchase(purchaseId) {
 }
 
 // 仕入リスト取得: 仕入管理シートの履歴一覧取得
-function getPurchaseList() {
-  Logger.log('getPurchaseList開始');
+function getPurchaseList(filterStatus) {
+  Logger.log('getPurchaseList開始 filterStatus:' + filterStatus);
   const properties = PropertiesService.getScriptProperties();
   const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
   if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
@@ -500,8 +518,12 @@ function getPurchaseList() {
   const purchaseData = purchaseSheet.getDataRange().getValues();
   const purchaseHeaders = purchaseData[0];
   
+  // デフォルトで「仕入中」の商品のみ表示（filterStatusが明示的に指定された場合はそちらを優先）
+  const targetStatus = filterStatus !== undefined ? filterStatus : '仕入中';
+  
   Logger.log('仕入管理シート行数: ' + purchaseData.length);
   Logger.log('仕入管理シートヘッダー: ' + JSON.stringify(purchaseHeaders));
+  Logger.log('絞り込み対象ステータス: ' + targetStatus);
   
   // 空の配列をチェック
   if (purchaseData.length <= 1) {
@@ -564,6 +586,13 @@ function getPurchaseList() {
     // 空行チェック（すべてのセルが空かnullかチェック）
     if (purchaseData[i].every(cell => cell === '' || cell === null || cell === undefined)) {
       Logger.log('空行をスキップ: ' + i);
+      continue;
+    }
+    
+    // ステータスによる絞り込み
+    const currentStatus = purchaseData[i][statusColIdx];
+    if (targetStatus !== 'all' && currentStatus !== targetStatus) {
+      Logger.log(`ステータスが「${targetStatus}」でない行をスキップ: ${i} (ステータス: ${currentStatus})`);
       continue;
     }
     

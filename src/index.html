@@ -190,23 +190,34 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <div class="table-responsive">
-              <table class="table table-bordered table-hover align-middle" id="inventoryListTable">
-                <thead class="table-light">
-                  <tr>
-                    <th>商品ID</th>
-                    <th>商品名</th>
-                    <th>カテゴリ</th>
-                    <th>在庫数</th>
-                    <th>ステータス</th>
-                    <th>最終更新日</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <!-- JSでデータ挿入 -->
-                </tbody>
-              </table>
+            <!-- ステータスフィルター -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="inventoryStatusFilter" class="form-label">ステータス絞り込み:</label>
+                <select class="form-select" id="inventoryStatusFilter" onchange="filterInventoryList()">
+                  <option value="">すべて表示</option>
+                  <option value="在庫あり">在庫あり</option>
+                  <option value="出品中">出品中</option>
+                  <option value="在庫なし">在庫なし</option>
+                </select>
+              </div>
             </div>
+
+            <table class="table table-striped" id="inventoryListTable">
+              <thead>
+                <tr>
+                  <th>商品ID</th>
+                  <th>商品名</th>
+                  <th>カテゴリ</th>
+                  <th>在庫数</th>
+                  <th>ステータス</th>
+                  <th>最終更新日</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- データがここに入る -->
+              </tbody>
+            </table>
             <div id="inventoryListError" class="text-danger"></div>
           </div>
           <div class="modal-footer">
@@ -218,26 +229,37 @@
     
     <!-- 販売一覧モーダル -->
     <div class="modal fade" id="salesListModal" tabindex="-1" aria-labelledby="salesListModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-xl">
+      <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="salesListModalLabel">販売一覧</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
+            <!-- ステータスフィルター -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="salesStatusFilter" class="form-label">ステータス絞り込み:</label>
+                <select class="form-select" id="salesStatusFilter" onchange="filterSalesList()">
+                  <option value="">すべて表示</option>
+                  <option value="取引中">取引中</option>
+                  <option value="完了">完了</option>
+                  <option value="キャンセル">キャンセル</option>
+                </select>
+              </div>
+            </div>
+
             <div class="table-responsive">
               <table class="table table-bordered table-hover align-middle" id="salesListTable">
                 <thead class="table-light">
                   <tr>
                     <th>取引ID</th>
-                    <th>商品ID</th>
+                    <th>出品ID</th>
                     <th>商品名</th>
-                    <th>カテゴリ</th>
                     <th>販売日</th>
                     <th>販売価格</th>
                     <th>販売手数料</th>
                     <th>送料</th>
-                    <th>購入者情報</th>
                     <th>取引ステータス</th>
                   </tr>
                 </thead>
@@ -303,6 +325,19 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
+            <!-- ステータスフィルター -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="listingStatusFilter" class="form-label">ステータス絞り込み:</label>
+                <select class="form-select" id="listingStatusFilter" onchange="filterListingList()">
+                  <option value="">すべて表示</option>
+                  <option value="出品中">出品中</option>
+                  <option value="売却済">売却済</option>
+                  <option value="キャンセル">キャンセル</option>
+                </select>
+              </div>
+            </div>
+
             <div class="table-responsive">
               <table class="table table-bordered table-hover align-middle" id="listingListTable">
                 <thead class="table-light">
@@ -446,6 +481,18 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
+            <!-- ステータスフィルター -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="purchaseStatusFilter" class="form-label">ステータス絞り込み:</label>
+                <select class="form-select" id="purchaseStatusFilter" onchange="filterPurchaseList()">
+                  <option value="仕入中" selected>仕入中のみ</option>
+                  <option value="完了">完了のみ</option>
+                  <option value="キャンセル">キャンセルのみ</option>
+                  <option value="all">すべて表示</option>
+                </select>
+              </div>
+            </div>
             <div class="table-responsive">
               <table class="table table-bordered table-hover align-middle" id="purchaseListTable">
                 <thead class="table-light">
@@ -523,24 +570,12 @@
         document.getElementById('inventoryListError').textContent = '';
         const tbody = document.querySelector('#inventoryListTable tbody');
         tbody.innerHTML = '<tr><td colspan="6" class="text-center">読み込み中...</td></tr>';
+        
+        // フィルター初期値をリセット
+        document.getElementById('inventoryStatusFilter').value = '';
+        
         google.script.run.withSuccessHandler(function(list) {
-          if (!list || list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">データがありません</td></tr>';
-            return;
-          }
-          tbody.innerHTML = '';
-          list.forEach(function(item) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td>${item.商品ID}</td>
-              <td>${item.商品名}</td>
-              <td>${item.カテゴリ}</td>
-              <td>${item.在庫数}</td>
-              <td>${item.ステータス}</td>
-              <td>${item.最終更新日 || ''}</td>
-            `;
-            tbody.appendChild(tr);
-          });
+          renderInventoryTable(list);
         }).withFailureHandler(function(error) {
           tbody.innerHTML = '';
           document.getElementById('inventoryListError').textContent = error.message || error;
@@ -548,17 +583,110 @@
         modal.show();
       }
       
+      // 在庫一覧テーブル描画関数
+      function renderInventoryTable(list) {
+        const tbody = document.querySelector('#inventoryListTable tbody');
+        if (!list || list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center">データがありません</td></tr>';
+          return;
+        }
+        tbody.innerHTML = '';
+        list.forEach(function(item) {
+          // 安全なデータ表示（undefinedの場合は空文字に）
+          const safeValue = (val) => val !== undefined && val !== null ? val : '';
+          
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${safeValue(item.商品ID)}</td>
+            <td>${safeValue(item.商品名)}</td>
+            <td>${safeValue(item.カテゴリ)}</td>
+            <td>${safeValue(item.在庫数)}</td>
+            <td>${safeValue(item.ステータス)}</td>
+            <td>${safeValue(item.最終更新日)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      
+      // 在庫一覧のステータスフィルター機能
+      function filterInventoryList() {
+        const filterValue = document.getElementById('inventoryStatusFilter').value;
+        const tbody = document.querySelector('#inventoryListTable tbody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">読み込み中...</td></tr>';
+        
+        console.log('在庫一覧を絞り込み:', filterValue);
+        
+        google.script.run.withSuccessHandler(function(list) {
+          renderInventoryTable(list);
+        }).withFailureHandler(function(error) {
+          tbody.innerHTML = '';
+          document.getElementById('inventoryListError').textContent = error.message || error;
+        }).getInventoryList(filterValue);
+      }
+
       function showSales() {
         const modal = new bootstrap.Modal(document.getElementById('salesListModal'));
+        document.getElementById('salesListError').textContent = '';
+        const tbody = document.querySelector('#salesListTable tbody');
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">読み込み中...</td></tr>';
+        
+        // フィルター初期値をリセット
+        document.getElementById('salesStatusFilter').value = '';
+        
         google.script.run.withSuccessHandler(function(list) {
           renderSalesTable(list);
           modal.show();
         }).withFailureHandler(function(error) {
+          tbody.innerHTML = '';
           document.getElementById('salesListError').textContent = error.message || error;
           modal.show();
         }).getSalesList();
       }
       
+      // 販売一覧テーブル描画関数
+      function renderSalesTable(list) {
+        const tbody = document.querySelector('#salesListTable tbody');
+        if (!list || list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center">データがありません</td></tr>';
+          return;
+        }
+        
+        tbody.innerHTML = '';
+        list.forEach(function(item) {
+          // 安全なデータ表示（undefinedの場合は空文字に）
+          const safeValue = (val) => val !== undefined && val !== null ? val : '';
+          
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${safeValue(item.取引ID)}</td>
+            <td>${safeValue(item.出品ID)}</td>
+            <td>${safeValue(item.商品名)}</td>
+            <td>${safeValue(item.販売日)}</td>
+            <td>${safeValue(item.販売価格)}</td>
+            <td>${safeValue(item.販売手数料)}</td>
+            <td>${safeValue(item.送料)}</td>
+            <td>${safeValue(item.取引ステータス)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      
+      // 販売一覧のステータスフィルター機能
+      function filterSalesList() {
+        const filterValue = document.getElementById('salesStatusFilter').value;
+        const tbody = document.querySelector('#salesListTable tbody');
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">読み込み中...</td></tr>';
+        
+        console.log('販売一覧を絞り込み:', filterValue);
+        
+        google.script.run.withSuccessHandler(function(list) {
+          renderSalesTable(list);
+        }).withFailureHandler(function(error) {
+          tbody.innerHTML = '';
+          document.getElementById('salesListError').textContent = error.message || error;
+        }).getSalesList(filterValue);
+      }
+
       function showFinance() {
         google.script.run.withSuccessHandler(function(result) {
           // 財務レポートを表示
@@ -627,40 +755,66 @@
         document.getElementById('listingListError').textContent = '';
         const tbody = document.querySelector('#listingListTable tbody');
         tbody.innerHTML = '<tr><td colspan="8" class="text-center">読み込み中...</td></tr>';
+        
+        // フィルター初期値をリセット
+        document.getElementById('listingStatusFilter').value = '';
+        
         google.script.run.withSuccessHandler(function(list) {
-          console.log('出品一覧データ受信:', list ? JSON.stringify(list) : 'null');
-          if (!list || list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center">データがありません</td></tr>';
-            return;
-          }
-          
-          console.log('表示対象データ件数:', list.length);
-          
-          tbody.innerHTML = '';
-          list.forEach(function(item, index) {
-            console.log(`出品データ ${index+1}:`, JSON.stringify(item));
-            
-            // 安全なデータ表示（undefinedの場合は空文字に）
-            const safeValue = (val) => val !== undefined && val !== null ? val : '';
-            
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td>${safeValue(item.出品ID)}</td>
-              <td>${safeValue(item.商品ID)}</td>
-              <td>${safeValue(item.商品名)}</td>
-              <td>${safeValue(item.出品日)}</td>
-              <td>${safeValue(item.出品価格)}</td>
-              <td>${safeValue(item.出品数)}</td>
-              <td>${safeValue(item.ステータス)}</td>
-              <td>${safeValue(item.備考)}</td>
-            `;
-            tbody.appendChild(tr);
-          });
+          renderListingTable(list);
         }).withFailureHandler(function(error) {
           tbody.innerHTML = '';
           document.getElementById('listingListError').textContent = error.message || error;
         }).getListingList();
         modal.show();
+      }
+      
+      // 出品一覧テーブル描画関数
+      function renderListingTable(list) {
+        console.log('出品一覧データ受信:', list ? JSON.stringify(list) : 'null');
+        const tbody = document.querySelector('#listingListTable tbody');
+        if (!list || list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center">データがありません</td></tr>';
+          return;
+        }
+        
+        console.log('表示対象データ件数:', list.length);
+        
+        tbody.innerHTML = '';
+        list.forEach(function(item, index) {
+          console.log(`出品データ ${index+1}:`, JSON.stringify(item));
+          
+          // 安全なデータ表示（undefinedの場合は空文字に）
+          const safeValue = (val) => val !== undefined && val !== null ? val : '';
+          
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${safeValue(item.出品ID)}</td>
+            <td>${safeValue(item.商品ID)}</td>
+            <td>${safeValue(item.商品名)}</td>
+            <td>${safeValue(item.出品日)}</td>
+            <td>${safeValue(item.出品価格)}</td>
+            <td>${safeValue(item.出品数)}</td>
+            <td>${safeValue(item.ステータス)}</td>
+            <td>${safeValue(item.備考)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      
+      // 出品一覧のステータスフィルター機能
+      function filterListingList() {
+        const filterValue = document.getElementById('listingStatusFilter').value;
+        const tbody = document.querySelector('#listingListTable tbody');
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">読み込み中...</td></tr>';
+        
+        console.log('出品一覧を絞り込み:', filterValue);
+        
+        google.script.run.withSuccessHandler(function(list) {
+          renderListingTable(list);
+        }).withFailureHandler(function(error) {
+          tbody.innerHTML = '';
+          document.getElementById('listingListError').textContent = error.message || error;
+        }).getListingList(filterValue);
       }
 
       function showSaleRegisterForm() {
@@ -791,13 +945,34 @@
         document.getElementById('purchaseListError').textContent = '';
         const tbody = document.querySelector('#purchaseListTable tbody');
         tbody.innerHTML = '<tr><td colspan="8" class="text-center">読み込み中...</td></tr>';
+        
+        // ステータスフィルターのデフォルト値を設定
+        document.getElementById('purchaseStatusFilter').value = '仕入中';
+        
+        // 仕入中のステータスの商品のみ表示するために引数を渡す
         google.script.run.withSuccessHandler(function(list) {
           renderPurchaseListTable(list);
         }).withFailureHandler(function(error) {
           tbody.innerHTML = '';
           document.getElementById('purchaseListError').textContent = error.message || error;
-        }).getPurchaseList();
+        }).getPurchaseList('仕入中');
         modal.show();
+      }
+
+      // 仕入一覧のステータスフィルター機能
+      function filterPurchaseList() {
+        const filterValue = document.getElementById('purchaseStatusFilter').value;
+        const tbody = document.querySelector('#purchaseListTable tbody');
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">読み込み中...</td></tr>';
+        
+        console.log('仕入一覧を絞り込み:', filterValue);
+        
+        google.script.run.withSuccessHandler(function(list) {
+          renderPurchaseListTable(list);
+        }).withFailureHandler(function(error) {
+          tbody.innerHTML = '';
+          document.getElementById('purchaseListError').textContent = error.message || error;
+        }).getPurchaseList(filterValue);
       }
 
       // tbody描画だけ分離
@@ -869,6 +1044,9 @@
         const select = event.target;
         const purchaseId = select.getAttribute('data-purchase-id');
         const newStatus = select.value;
+        // 現在のフィルター値を取得
+        const currentFilter = document.getElementById('purchaseStatusFilter').value;
+        
         // GAS連携
         google.script.run.withSuccessHandler(function() {
           // モーダルは開いたままtbodyだけ再描画
@@ -876,7 +1054,7 @@
             renderPurchaseListTable(list);
           }).withFailureHandler(function(error) {
             alert('リスト再取得エラー: ' + (error.message || error));
-          }).getPurchaseList();
+          }).getPurchaseList(currentFilter);
         }).withFailureHandler(function(error) {
           alert('ステータス更新エラー: ' + (error.message || error));
           // エラー時もリスト再取得
@@ -884,56 +1062,8 @@
             renderPurchaseListTable(list);
           }).withFailureHandler(function(error) {
             alert('リスト再取得エラー: ' + (error.message || error));
-          }).getPurchaseList();
+          }).getPurchaseList(currentFilter);
         }).updatePurchase(purchaseId, { 'ステータス': newStatus });
-      }
-
-      function renderSalesTable(salesList) {
-        const tbody = document.getElementById('salesListTable').getElementsByTagName('tbody')[0];
-        tbody.innerHTML = '';  // クリア
-        if (!salesList || salesList.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="10" class="text-center">データがありません</td></tr>';
-          return;
-        }
-        
-        salesList.forEach(function(sale) {
-          const tr = document.createElement('tr');
-          const statusOptions = ['発送待ち', '評価待ち', '取引完了'];
-          let statusSelect = `<select class='form-select form-select-sm' data-sale-id='${sale.取引ID}' onchange='handleSaleStatusChange(event)'>`;
-          statusOptions.forEach(function(opt) {
-            statusSelect += `<option value='${opt}'${sale.取引ステータス === opt ? ' selected' : ''}>${opt}</option>`;
-          });
-          statusSelect += '</select>';
-          
-          tr.innerHTML = `
-            <td>${sale.取引ID}</td>
-            <td>${sale.商品ID}</td>
-            <td>${sale.商品名}</td>
-            <td>${sale.カテゴリ}</td>
-            <td>${sale.販売日}</td>
-            <td>${sale.販売価格}</td>
-            <td>${sale.販売手数料}</td>
-            <td>${sale.送料}</td>
-            <td>${sale.購入者情報 || ''}</td>
-            <td>${statusSelect}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
-      
-      function handleSaleStatusChange(event) {
-        const select = event.target;
-        const saleId = select.getAttribute('data-sale-id');
-        const newStatus = select.value;
-        
-        // GAS連携
-        google.script.run.withSuccessHandler(function() {
-          // 成功時は何もしない
-        }).withFailureHandler(function(error) {
-          alert('ステータス更新エラー: ' + (error.message || error));
-          // エラー時はリスト再取得
-          showSales();
-        }).updateTransactionStatus(saleId, newStatus);
       }
 
       // ダッシュボード更新
