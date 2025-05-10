@@ -196,9 +196,9 @@
                 <label for="inventoryStatusFilter" class="form-label">ステータス絞り込み:</label>
                 <select class="form-select" id="inventoryStatusFilter" onchange="filterInventoryList()">
                   <option value="">すべて表示</option>
-                  <option value="在庫あり">在庫あり</option>
-                  <option value="出品中">出品中</option>
-                  <option value="在庫なし">在庫なし</option>
+                  <option value="出品可能">出品可能</option>
+                  <option value="仕入中">仕入中</option>
+                  <option value="在庫切れ">在庫切れ</option>
                 </select>
               </div>
             </div>
@@ -242,9 +242,9 @@
                 <label for="salesStatusFilter" class="form-label">ステータス絞り込み:</label>
                 <select class="form-select" id="salesStatusFilter" onchange="filterSalesList()">
                   <option value="">すべて表示</option>
-                  <option value="取引中">取引中</option>
-                  <option value="完了">完了</option>
-                  <option value="キャンセル">キャンセル</option>
+                  <option value="発送待ち">発送待ち</option>
+                  <option value="評価待ち">評価待ち</option>
+                  <option value="取引完了">取引完了</option>
                 </select>
               </div>
             </div>
@@ -332,7 +332,7 @@
                 <select class="form-select" id="listingStatusFilter" onchange="filterListingList()">
                   <option value="">すべて表示</option>
                   <option value="出品中">出品中</option>
-                  <option value="売却済">売却済</option>
+                  <option value="完了">完了</option>
                   <option value="キャンセル">キャンセル</option>
                 </select>
               </div>
