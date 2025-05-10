@@ -123,6 +123,17 @@
         border-radius: 8px;
         border: 1px solid #dee2e6;
         padding: 0.6rem 1rem;
+        padding-right: 2.5rem;
+        background-position: right 0.75rem center;
+        background-size: 16px 12px;
+        min-width: 120px;
+      }
+
+      .form-select-sm {
+        padding: 0.4rem 0.8rem;
+        padding-right: 2rem;
+        font-size: 0.875rem;
+        min-width: 100px;
       }
 
       .form-control:focus, .form-select:focus {
@@ -767,6 +778,19 @@
           // 安全なデータ表示（undefinedの場合は空文字に）
           const safeValue = (val) => val !== undefined && val !== null ? val : '';
           
+          // 日付のフォーマット
+          const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ja-JP', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            }).replace(/\//g, '-');
+          };
+          
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${safeValue(item.商品ID)}</td>
@@ -774,7 +798,7 @@
             <td>${safeValue(item.カテゴリ)}</td>
             <td>${safeValue(item.在庫数)}</td>
             <td>${safeValue(item.ステータス)}</td>
-            <td>${safeValue(item.最終更新日)}</td>
+            <td>${formatDate(item.最終更新日)}</td>
           `;
           tbody.appendChild(tr);
         });
@@ -828,16 +852,50 @@
           // 安全なデータ表示（undefinedの場合は空文字に）
           const safeValue = (val) => val !== undefined && val !== null ? val : '';
           
+          // 日付のフォーマット
+          const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ja-JP', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            }).replace(/\//g, '-');
+          };
+          
           const tr = document.createElement('tr');
+          const statusOptions = ['発送待ち', '評価待ち', '取引完了'];
+          
+          // セレクトボックスを作成
+          let statusSelect = `<select class='form-select form-select-sm' data-sale-id='${item.取引ID || ""}' onchange='handleSaleStatusChange(event)'>`;
+          
+          // 現在のステータスが含まれているかチェック
+          let statusFound = false;
+          statusOptions.forEach(function(opt) {
+            const isSelected = item.取引ステータス === opt;
+            if (isSelected) statusFound = true;
+            statusSelect += `<option value='${opt}'${isSelected ? ' selected' : ''}>${opt}</option>`;
+          });
+          
+          // 現在のステータスがリストにない場合は追加
+          if (!statusFound && item.取引ステータス) {
+            console.log(`未知のステータスを検出: ${item.取引ステータス}`);
+            statusSelect += `<option value='${item.取引ステータス}' selected>${item.取引ステータス}</option>`;
+          }
+          
+          statusSelect += '</select>';
+          
           tr.innerHTML = `
             <td>${safeValue(item.取引ID)}</td>
             <td>${safeValue(item.出品ID)}</td>
             <td>${safeValue(item.商品名)}</td>
-            <td>${safeValue(item.販売日)}</td>
+            <td>${formatDate(item.販売日)}</td>
             <td>${safeValue(item.販売価格)}</td>
             <td>${safeValue(item.販売手数料)}</td>
             <td>${safeValue(item.送料)}</td>
-            <td>${safeValue(item.取引ステータス)}</td>
+            <td>${statusSelect}</td>
           `;
           tbody.appendChild(tr);
         });
@@ -958,15 +1016,49 @@
           // 安全なデータ表示（undefinedの場合は空文字に）
           const safeValue = (val) => val !== undefined && val !== null ? val : '';
           
+          // 日付のフォーマット
+          const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ja-JP', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            }).replace(/\//g, '-');
+          };
+          
           const tr = document.createElement('tr');
+          const statusOptions = ['出品中', '完了', 'キャンセル'];
+          
+          // セレクトボックスを作成
+          let statusSelect = `<select class='form-select form-select-sm' data-listing-id='${item.出品ID || ""}' onchange='handleListingStatusChange(event)'>`;
+          
+          // 現在のステータスが含まれているかチェック
+          let statusFound = false;
+          statusOptions.forEach(function(opt) {
+            const isSelected = item.ステータス === opt;
+            if (isSelected) statusFound = true;
+            statusSelect += `<option value='${opt}'${isSelected ? ' selected' : ''}>${opt}</option>`;
+          });
+          
+          // 現在のステータスがリストにない場合は追加
+          if (!statusFound && item.ステータス) {
+            console.log(`未知のステータスを検出: ${item.ステータス}`);
+            statusSelect += `<option value='${item.ステータス}' selected>${item.ステータス}</option>`;
+          }
+          
+          statusSelect += '</select>';
+          
           tr.innerHTML = `
             <td>${safeValue(item.出品ID)}</td>
             <td>${safeValue(item.商品ID)}</td>
             <td>${safeValue(item.商品名)}</td>
-            <td>${safeValue(item.出品日)}</td>
+            <td>${formatDate(item.出品日)}</td>
             <td>${safeValue(item.出品価格)}</td>
             <td>${safeValue(item.出品数)}</td>
-            <td>${safeValue(item.ステータス)}</td>
+            <td>${statusSelect}</td>
             <td>${safeValue(item.備考)}</td>
           `;
           tbody.appendChild(tr);
@@ -1149,7 +1241,7 @@
 
       // tbody描画だけ分離
       function renderPurchaseListTable(list) {
-        console.log('仕入一覧データ受信:', list ? JSON.stringify(list) : 'null'); // 文字列化して確実に出力
+        console.log('仕入一覧データ受信:', list ? JSON.stringify(list) : 'null');
         const tbody = document.querySelector('#purchaseListTable tbody');
         if (!list || list.length === 0) {
           console.log('仕入一覧データなし');
@@ -1161,17 +1253,29 @@
         
         tbody.innerHTML = '';
         list.forEach(function(item, index) {
-          console.log(`仕入データ ${index+1}:`, JSON.stringify(item)); // 文字列化して確実に出力
+          console.log(`仕入データ ${index+1}:`, JSON.stringify(item));
           
           // ステータス処理の改善
           let status = item.ステータス;
-          // undefined/nullチェック
           if (status === undefined || status === null) {
             console.log(`データ ${index+1} のステータスが未定義です`);
             status = '不明';
           } else {
             console.log(`ステータス: "${status}", 型: ${typeof status}`);
           }
+          
+          // 日付のフォーマット
+          const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ja-JP', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            }).replace(/\//g, '-');
+          };
           
           const tr = document.createElement('tr');
           const statusOptions = ['完了', '仕入中', 'キャンセル'];
@@ -1202,7 +1306,7 @@
             <td>${safeValue(item.仕入ID)}</td>
             <td>${safeValue(item.商品ID)}</td>
             <td>${safeValue(item.商品名)}</td>
-            <td>${safeValue(item.仕入日)}</td>
+            <td>${formatDate(item.仕入日)}</td>
             <td>${safeValue(item.仕入数)}</td>
             <td>${safeValue(item.仕入価格)}</td>
             <td>${statusSelect}</td>
@@ -1236,6 +1340,58 @@
             alert('リスト再取得エラー: ' + (error.message || error));
           }).getPurchaseList(currentFilter);
         }).updatePurchase(purchaseId, { 'ステータス': newStatus });
+      }
+
+      function handleListingStatusChange(event) {
+        const select = event.target;
+        const listingId = select.getAttribute('data-listing-id');
+        const newStatus = select.value;
+        // 現在のフィルター値を取得
+        const currentFilter = document.getElementById('listingStatusFilter').value;
+        
+        // GAS連携
+        google.script.run.withSuccessHandler(function() {
+          // モーダルは開いたままtbodyだけ再描画
+          google.script.run.withSuccessHandler(function(list) {
+            renderListingTable(list);
+          }).withFailureHandler(function(error) {
+            alert('リスト再取得エラー: ' + (error.message || error));
+          }).getListingList(currentFilter);
+        }).withFailureHandler(function(error) {
+          alert('ステータス更新エラー: ' + (error.message || error));
+          // エラー時もリスト再取得
+          google.script.run.withSuccessHandler(function(list) {
+            renderListingTable(list);
+          }).withFailureHandler(function(error) {
+            alert('リスト再取得エラー: ' + (error.message || error));
+          }).getListingList(currentFilter);
+        }).updateListing(listingId, { 'ステータス': newStatus });
+      }
+
+      function handleSaleStatusChange(event) {
+        const select = event.target;
+        const saleId = select.getAttribute('data-sale-id');
+        const newStatus = select.value;
+        // 現在のフィルター値を取得
+        const currentFilter = document.getElementById('salesStatusFilter').value;
+        
+        // GAS連携
+        google.script.run.withSuccessHandler(function() {
+          // モーダルは開いたままtbodyだけ再描画
+          google.script.run.withSuccessHandler(function(list) {
+            renderSalesTable(list);
+          }).withFailureHandler(function(error) {
+            alert('リスト再取得エラー: ' + (error.message || error));
+          }).getSalesList(currentFilter);
+        }).withFailureHandler(function(error) {
+          alert('ステータス更新エラー: ' + (error.message || error));
+          // エラー時もリスト再取得
+          google.script.run.withSuccessHandler(function(list) {
+            renderSalesTable(list);
+          }).withFailureHandler(function(error) {
+            alert('リスト再取得エラー: ' + (error.message || error));
+          }).getSalesList(currentFilter);
+        }).updateTransactionStatus(saleId, newStatus);
       }
 
       // ダッシュボード更新
