@@ -260,17 +260,32 @@
       </div>
       
       <div class="row">
-        <!-- 商品・在庫・仕入管理まとめ -->
-        <div class="col-md-12">
+        <!-- 商品・在庫管理 -->
+        <div class="col-md-6">
           <div class="card">
             <div class="card-header">
-              <h5 class="card-title mb-0">商品・在庫・仕入管理</h5>
+              <h5 class="card-title mb-0">商品・在庫管理</h5>
             </div>
             <div class="card-body">
-              <button class="btn btn-primary me-2" onclick="showProductForm()">新規商品登録</button>
-              <button class="btn btn-info me-2" onclick="showInventory()">在庫一覧</button>
-              <button class="btn btn-secondary me-2" onclick="showPurchaseRegisterForm()">仕入登録</button>
-              <button class="btn btn-info" onclick="showPurchaseList()">仕入一覧</button>
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary" onclick="showProductForm()">新規商品登録</button>
+                <button class="btn btn-info" onclick="showInventory()">在庫一覧</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 仕入管理 -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">仕入管理</h5>
+            </div>
+            <div class="card-body">
+              <div class="d-flex gap-2">
+                <button class="btn btn-secondary" onclick="showPurchaseRegisterForm()">仕入登録</button>
+                <button class="btn btn-info" onclick="showPurchaseList()">仕入一覧</button>
+              </div>
             </div>
           </div>
         </div>
@@ -297,8 +312,8 @@
               <h5 class="card-title mb-0">販売管理</h5>
             </div>
             <div class="card-body">
-              <button class="btn btn-success" onclick="showSales()">販売一覧</button>
-              <button class="btn btn-primary ms-2" onclick="showSaleRegisterForm()">販売登録</button>
+              <button class="btn btn-primary" onclick="showSaleRegisterForm()">販売登録</button>
+              <button class="btn btn-success ms-2" onclick="showSales()">販売一覧</button>
             </div>
           </div>
         </div>
@@ -826,8 +841,8 @@
         const tbody = document.querySelector('#salesListTable tbody');
         tbody.innerHTML = '<tr><td colspan="8" class="text-center">読み込み中...</td></tr>';
         
-        // フィルター初期値をリセット
-        document.getElementById('salesStatusFilter').value = '';
+        // フィルター初期値を「発送待ち」に設定
+        document.getElementById('salesStatusFilter').value = '発送待ち';
         
         google.script.run.withSuccessHandler(function(list) {
           renderSalesTable(list);
@@ -836,7 +851,7 @@
           tbody.innerHTML = '';
           document.getElementById('salesListError').textContent = error.message || error;
           modal.show();
-        }).getSalesList();
+        }).getSalesList('発送待ち'); // 初期表示時も「発送待ち」のデータを取得
       }
       
       // 販売一覧テーブル描画関数
@@ -986,15 +1001,15 @@
         const tbody = document.querySelector('#listingListTable tbody');
         tbody.innerHTML = '<tr><td colspan="8" class="text-center">読み込み中...</td></tr>';
         
-        // フィルター初期値をリセット
-        document.getElementById('listingStatusFilter').value = '';
+        // フィルター初期値を「出品中」に設定
+        document.getElementById('listingStatusFilter').value = '出品中';
         
         google.script.run.withSuccessHandler(function(list) {
           renderListingTable(list);
         }).withFailureHandler(function(error) {
           tbody.innerHTML = '';
           document.getElementById('listingListError').textContent = error.message || error;
-        }).getListingList();
+        }).getListingList('出品中'); // 初期表示時も「出品中」のデータを取得
         modal.show();
       }
       
