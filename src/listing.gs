@@ -29,7 +29,15 @@ function registerListing(listing) {
   if (在庫数 < listing.出品数) throw new Error('在庫数が不足しています');
 
   // 在庫数減算
-  inventorySheet.getRange(inventoryRowIdx, inventoryHeaders.indexOf('在庫数') + 1).setValue(在庫数 - listing.出品数);
+  const newStock = 在庫数 - listing.出品数;
+  inventorySheet.getRange(inventoryRowIdx, inventoryHeaders.indexOf('在庫数') + 1).setValue(newStock);
+  
+  // 在庫数が0になったらステータスを「在庫切れ」に更新
+  const statusColIdx = inventoryHeaders.indexOf('ステータス');
+  if (statusColIdx !== -1 && newStock === 0) {
+    inventorySheet.getRange(inventoryRowIdx, statusColIdx + 1).setValue('在庫切れ');
+  }
+  
   // 最終更新日も更新
   const dateStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
   const updateColIdx = inventoryHeaders.indexOf('最終更新日');

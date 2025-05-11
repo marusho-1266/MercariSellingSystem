@@ -37,13 +37,21 @@ function getDashboardSummary() {
   const inventoryData = inventorySheet.getDataRange().getValues();
   let totalStock = 0;
   let outOfStockCount = 0;
-  let listedCount = 0;
   for (let i = 1; i < inventoryData.length; i++) {
     const stock = Number(inventoryData[i][1]);
-    const status = inventoryData[i][2];
     totalStock += stock;
     if (stock === 0) outOfStockCount++;
-    if (status === '出品中') listedCount++;
+  }
+
+  // 出品管理集計
+  const listingSheet = ss.getSheetByName('出品管理');
+  if (!listingSheet) throw new Error('出品管理シートが存在しません');
+  const listingData = listingSheet.getDataRange().getValues();
+  let listedCount = 0;
+  for (let i = 1; i < listingData.length; i++) {
+    if (listingData[i][listingData[0].indexOf('ステータス')] === '出品中') {
+      listedCount++;
+    }
   }
 
   return {

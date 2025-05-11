@@ -303,20 +303,28 @@ function registerPurchase(purchase) {
   const inventoryHeaders = inventoryData[0];
   let inventoryRowIdx = -1;
   let currentStock = 0;
+  let currentStatus = '';
   for (let i = 1; i < inventoryData.length; i++) {
     if (inventoryData[i][0] === purchase.商品ID) {
       inventoryRowIdx = i + 1;
       currentStock = Number(inventoryData[i][1]);
+      currentStatus = inventoryData[i][inventoryHeaders.indexOf('ステータス')];
       break;
     }
   }
-  let isNewInventory = false;
-  if (inventoryRowIdx === -1) {
-    // 在庫管理への新規追加・加算処理は削除
-    // ここでは何もしない
+
+  // 在庫切れの商品を仕入登録した場合、ステータスを「仕入中」に更新
+  if (inventoryRowIdx !== -1 && currentStatus === '在庫切れ') {
+    const statusColIdx = inventoryHeaders.indexOf('ステータス');
+    if (statusColIdx !== -1) {
+      inventorySheet.getRange(inventoryRowIdx, statusColIdx + 1).setValue('仕入中');
+      // 最終更新日も更新
+      const dateColIdx = inventoryHeaders.indexOf('最終更新日');
+      if (dateColIdx !== -1) {
+        inventorySheet.getRange(inventoryRowIdx, dateColIdx + 1).setValue(Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'));
+      }
+    }
   }
-  // 既存行がある場合も在庫数加算処理は削除
-  // ここでは何もしない
 
   // 仕入ID発番
   const purchaseId = 'S' + Date.now() + Math.floor(Math.random() * 1000);

@@ -844,14 +844,16 @@
         // フィルター初期値を「発送待ち」に設定
         document.getElementById('salesStatusFilter').value = '発送待ち';
         
+        // 先にモーダルを表示
+        modal.show();
+        
+        // その後でデータを取得
         google.script.run.withSuccessHandler(function(list) {
           renderSalesTable(list);
-          modal.show();
         }).withFailureHandler(function(error) {
           tbody.innerHTML = '';
           document.getElementById('salesListError').textContent = error.message || error;
-          modal.show();
-        }).getSalesList('発送待ち'); // 初期表示時も「発送待ち」のデータを取得
+        }).getSalesList('発送待ち');
       }
       
       // 販売一覧テーブル描画関数
