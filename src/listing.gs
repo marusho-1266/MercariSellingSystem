@@ -204,4 +204,54 @@ function getListableListings() {
     }
   }
   return result;
+}
+
+// 出品ステータス更新関数: 出品IDと更新フィールドを受け取り、出品管理シートの該当行を更新する
+function updateListing(listingId, updateFields) {
+  Logger.log('updateListing開始: listingId=' + listingId + ', updateFields=' + JSON.stringify(updateFields));
+  
+  // スプレッドシート取得
+  const properties = PropertiesService.getScriptProperties();
+  const ssId = properties.getProperty('MASTER_SPREADSHEET_ID');
+  if (!ssId) throw new Error('マスタースプレッドシートが未作成です');
+  const ss = SpreadsheetApp.openById(ssId);
+
+  // 出品管理シート取得
+  const listingSheet = ss.getSheetByName('出品管理');
+  if (!listingSheet) throw new Error('出品管理シートが存在しません');
+  const listingData = listingSheet.getDataRange().getValues();
+  const headers = listingData[0];
+  
+  // 該当する出品IDの行を検索
+  let rowIdx = -1;
+  for (let i = 1; i < listingData.length; i++) {
+    if (String(listingData[i][0]) === String(listingId)) {
+      rowIdx = i + 1; // スプレッドシートの行番号は1から始まるため+1
+      break;
+    }
+  }
+  
+  if (rowIdx === -1) throw new Error('該当する出品IDが見つかりません: ' + listingId);
+  
+  // 更新フィールドを処理
+  for (const key in updateFields) {
+    const colIdx = headers.indexOf(key);
+    if (colIdx !== -1) {
+      Logger.log('更新: ' + key + '=' + updateFields[key] + ', 行=' + rowIdx + ', 列=' + (colIdx + 1));
+      listingSheet.getRange(rowIdx, colIdx + 1).setValue(updateFields[key]);
+    } else {
+      Logger.log('警告: フィールド ' + key + ' は出品管理シートに存在しません');
+    }
+  }
+  
+  // 最終更新日も更新（あれば）
+  const updateDateColIdx = headers.indexOf('最終更新日');
+  if (updateDateColIdx !== -1) {
+    const now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
+    listingSheet.getRange(rowIdx, updateDateColIdx + 1).setValue(now);
+    Logger.log('最終更新日を更新: ' + now);
+  }
+  
+  Logger.log('updateListing完了');
+  return true;
 } 
