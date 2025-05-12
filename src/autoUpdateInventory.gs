@@ -261,13 +261,18 @@ function registerSale(listingId, saleInfo) {
     }
   }
   if (!productId) throw new Error('該当する出品IDが見つかりません');
+  
+  // 現在の日時を取得
+  const now = new Date();
+  const dateStr = Utilities.formatDate(now, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
+  
   // 販売管理追加
   const saleId = 'T' + Date.now() + Math.floor(Math.random() * 1000);
   salesSheet.appendRow([
     saleId,
     listingId,
     productId,
-    Utilities.formatDate(new Date(saleInfo.販売日 + "T21:00:00"), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
+    dateStr, // 現在の日時を使用
     saleInfo.販売価格,
     saleInfo.販売手数料,
     saleInfo.送料,
@@ -283,7 +288,6 @@ function registerPurchase(purchase) {
   // 必須バリデーション
   validateProductIdExists(purchase.商品ID);
   if (!purchase.商品ID) throw new Error('商品IDは必須です');
-  if (!purchase.仕入日) throw new Error('仕入日は必須です');
   if (isNaN(purchase.仕入数) || purchase.仕入数 <= 0 || !Number.isInteger(Number(purchase.仕入数))) throw new Error('仕入数は1以上の整数で入力してください');
   if (isNaN(purchase.仕入価格) || purchase.仕入価格 < 0) throw new Error('仕入価格は0以上の数値で入力してください');
 
@@ -338,11 +342,15 @@ function registerPurchase(purchase) {
     Logger.log('指定されたステータス: ' + status);
   }
   
+  // 現在の日時を取得
+  const now = new Date();
+  const dateStr = Utilities.formatDate(now, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
+  
   // 仕入管理シートに履歴追加
   const rowData = [
     purchaseId,
     purchase.商品ID,
-    Utilities.formatDate(new Date(purchase.仕入日 + "T21:00:00"), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
+    dateStr, // 現在の日時を使用
     Number(purchase.仕入数),
     Number(purchase.仕入価格),
     status, // 明示的にstatusを使用

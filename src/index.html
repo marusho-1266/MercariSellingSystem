@@ -581,10 +581,6 @@
                 </select>
               </div>
               <div class="mb-3">
-                <label for="saleDate" class="form-label">販売日<span class="text-danger">*</span></label>
-                <input type="date" class="form-control" id="saleDate" required>
-              </div>
-              <div class="mb-3">
                 <label for="saleRegisterPrice" class="form-label">販売価格<span class="text-danger">*</span></label>
                 <input type="number" class="form-control" id="saleRegisterPrice" required>
               </div>
@@ -634,10 +630,6 @@
                 <select class="form-select" id="purchaseProductId" required>
                   <option value="">選択してください</option>
                 </select>
-              </div>
-              <div class="mb-3">
-                <label for="purchaseDate" class="form-label">仕入日<span class="text-danger">*</span></label>
-                <input type="date" class="form-control" id="purchaseDate" required>
               </div>
               <div class="mb-3">
                 <label for="purchaseQty" class="form-label">仕入数<span class="text-danger">*</span></label>
@@ -1125,7 +1117,6 @@
       function submitSaleRegister() {
         // 入力値取得
         const listingId = document.getElementById('saleListingId').value; // valueは直接IDなので、そのまま使う
-        const saleDate = document.getElementById('saleDate').value;
         const salePrice = document.getElementById('saleRegisterPrice').value;
         const saleFee = document.getElementById('saleFee').value;
         const saleShipping = document.getElementById('saleShipping').value;
@@ -1137,7 +1128,7 @@
           document.getElementById('saleRegisterError').textContent = '出品IDを選択してください。';
           return;
         }
-        if (!saleDate || salePrice === '') { // 販売日がない、または販売価格が空文字かチェック (nullチェックは不要)
+        if (salePrice === '') { // 販売価格が空文字かチェック (nullチェックは不要)
           document.getElementById('saleRegisterError').textContent = '必須項目をすべて入力してください。';
           return;
         }
@@ -1147,7 +1138,6 @@
         }
         // GAS連携
         const saleInfo = {
-          販売日: saleDate,
           販売価格: Number(salePrice),
           販売手数料: saleFee ? Number(saleFee) : 0,
           送料: saleShipping ? Number(saleShipping) : 0,
@@ -1190,12 +1180,11 @@
       }
       function submitPurchaseRegister() {
         const productId = document.getElementById('purchaseProductId').value;
-        const date = document.getElementById('purchaseDate').value;
         const qty = document.getElementById('purchaseQty').value;
         const price = document.getElementById('purchasePrice').value;
         const status = document.getElementById('purchaseStatus').value;
         const note = document.getElementById('purchaseNote').value.trim();
-        if (!productId || !date || !qty || !price) {
+        if (!productId || !qty || !price) {
           document.getElementById('purchaseRegisterError').textContent = '必須項目をすべて入力してください。';
           return;
         }
@@ -1205,7 +1194,6 @@
         }
         const purchase = {
           商品ID: productId,
-          仕入日: date,
           仕入数: Number(qty),
           仕入価格: Number(price),
           ステータス: status,
