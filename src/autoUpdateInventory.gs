@@ -267,7 +267,7 @@ function registerSale(listingId, saleInfo) {
     saleId,
     listingId,
     productId,
-    Utilities.formatDate(new Date(saleInfo.販売日), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
+    Utilities.formatDate(new Date(saleInfo.販売日 + "T21:00:00"), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
     saleInfo.販売価格,
     saleInfo.販売手数料,
     saleInfo.送料,
@@ -342,7 +342,7 @@ function registerPurchase(purchase) {
   const rowData = [
     purchaseId,
     purchase.商品ID,
-    Utilities.formatDate(new Date(purchase.仕入日), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
+    Utilities.formatDate(new Date(purchase.仕入日 + "T21:00:00"), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
     Number(purchase.仕入数),
     Number(purchase.仕入価格),
     status, // 明示的にstatusを使用
