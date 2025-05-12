@@ -3,8 +3,11 @@
   <head>
     <base target="_top">
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>メルカリ販売管理システム</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
       :root {
         --primary-color: #4a90e2;
@@ -323,11 +326,20 @@
         <!-- 財務管理 -->
         <div class="col-md-6">
           <div class="card">
-            <div class="card-header">
-              <h5 class="card-title mb-0">財務管理</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <div>ダッシュボード</div>
+              <div>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshDashboard()">
+                  <i class="bi bi-arrow-clockwise"></i> 更新
+                </button>
+                <!-- 財務レポートボタン追加 -->
+                <button class="btn btn-sm btn-outline-primary ms-2" onclick="showFinanceReport()">
+                  <i class="bi bi-graph-up"></i> 財務レポート
+                </button>
+              </div>
             </div>
             <div class="card-body">
-              <button class="btn btn-success" onclick="showFinance()">財務レポート</button>
+              <!-- ダッシュボードカードの内容 -->
             </div>
           </div>
         </div>
@@ -711,8 +723,230 @@
       </div>
     </div>
     
+    <!-- 財務レポートモーダル -->
+    <div class="modal fade" id="financeReportModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">財務レポート</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <!-- 期間フィルター -->
+            <div class="row mb-3">
+              <div class="col-md-5">
+                <div class="input-group">
+                  <span class="input-group-text">開始日</span>
+                  <input type="date" class="form-control" id="financeStartDate">
+                </div>
+              </div>
+              <div class="col-md-5">
+                <div class="input-group">
+                  <span class="input-group-text">終了日</span>
+                  <input type="date" class="form-control" id="financeEndDate">
+                </div>
+              </div>
+              <div class="col-md-2">
+                <button class="btn btn-primary w-100" onclick="applyFinanceFilter()">適用</button>
+              </div>
+            </div>
+            
+            <!-- タブナビゲーション -->
+            <ul class="nav nav-tabs" id="financeTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" type="button" role="tab" aria-controls="summary" aria-selected="true">基本指標</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="period-tab" data-bs-toggle="tab" data-bs-target="#period" type="button" role="tab" aria-controls="period" aria-selected="false">期間別売上</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="category-tab" data-bs-toggle="tab" data-bs-target="#category" type="button" role="tab" aria-controls="category" aria-selected="false">カテゴリ別</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="product-tab" data-bs-toggle="tab" data-bs-target="#product" type="button" role="tab" aria-controls="product" aria-selected="false">商品別</button>
+              </li>
+            </ul>
+            
+            <!-- タブコンテンツ -->
+            <div class="tab-content p-3 border border-top-0 rounded-bottom" id="financeTabContent">
+              <!-- 基本指標タブ -->
+              <div class="tab-pane fade show active" id="summary" role="tabpanel" aria-labelledby="summary-tab">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="card mb-3">
+                      <div class="card-body">
+                        <h5 class="card-title">売上概要</h5>
+                        <table class="table table-sm">
+                          <tbody>
+                            <tr>
+                              <th>総売上</th>
+                              <td id="totalSales">-</td>
+                            </tr>
+                            <tr>
+                              <th>手数料合計</th>
+                              <td id="totalFees">-</td>
+                            </tr>
+                            <tr>
+                              <th>送料合計</th>
+                              <td id="totalShipping">-</td>
+                            </tr>
+                            <tr>
+                              <th>粗利益</th>
+                              <td id="grossProfit">-</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="card mb-3">
+                      <div class="card-body">
+                        <h5 class="card-title">利益概要</h5>
+                        <table class="table table-sm">
+                          <tbody>
+                            <tr>
+                              <th>仕入コスト合計</th>
+                              <td id="totalPurchaseCost">-</td>
+                            </tr>
+                            <tr>
+                              <th>純利益</th>
+                              <td id="netProfit">-</td>
+                            </tr>
+                            <tr>
+                              <th>利益率</th>
+                              <td id="profitMargin">-</td>
+                            </tr>
+                            <tr>
+                              <th>取引完了数</th>
+                              <td id="completedSales">-</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-end mt-3">
+                  <button class="btn btn-sm btn-success" onclick="exportFinanceData('basic')">
+                    <i class="bi bi-download"></i> CSVエクスポート
+                  </button>
+                </div>
+              </div>
+              
+              <!-- 期間別売上タブ -->
+              <div class="tab-pane fade" id="period" role="tabpanel" aria-labelledby="period-tab">
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <div class="btn-group w-100">
+                      <button class="btn btn-outline-secondary" onclick="changePeriodGrouping('day')">日別</button>
+                      <button class="btn btn-outline-secondary" onclick="changePeriodGrouping('week')">週別</button>
+                      <button class="btn btn-outline-secondary active" onclick="changePeriodGrouping('month')">月別</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-12">
+                    <canvas id="periodChart" height="300"></canvas>
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <table class="table table-sm table-striped" id="periodTable">
+                    <thead>
+                      <tr>
+                        <th>期間</th>
+                        <th>売上</th>
+                        <th>手数料</th>
+                        <th>送料</th>
+                        <th>利益</th>
+                        <th>販売数</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- 期間別データがここに入る -->
+                    </tbody>
+                  </table>
+                </div>
+                <div class="text-end mt-3">
+                  <button class="btn btn-sm btn-success" onclick="exportFinanceData('period')">
+                    <i class="bi bi-download"></i> CSVエクスポート
+                  </button>
+                </div>
+              </div>
+              
+              <!-- カテゴリ別タブ -->
+              <div class="tab-pane fade" id="category" role="tabpanel" aria-labelledby="category-tab">
+                <div class="row">
+                  <div class="col-md-6">
+                    <canvas id="categoryChart" height="300"></canvas>
+                  </div>
+                  <div class="col-md-6">
+                    <table class="table table-sm table-striped" id="categoryTable">
+                      <thead>
+                        <tr>
+                          <th>カテゴリ</th>
+                          <th>売上</th>
+                          <th>利益</th>
+                          <th>販売数</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <!-- カテゴリ別データがここに入る -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="text-end mt-3">
+                  <button class="btn btn-sm btn-success" onclick="exportFinanceData('category')">
+                    <i class="bi bi-download"></i> CSVエクスポート
+                  </button>
+                </div>
+              </div>
+              
+              <!-- 商品別タブ -->
+              <div class="tab-pane fade" id="product" role="tabpanel" aria-labelledby="product-tab">
+                <div class="table-responsive">
+                  <table class="table table-sm table-striped" id="productTable">
+                    <thead>
+                      <tr>
+                        <th>商品名</th>
+                        <th>売上</th>
+                        <th>仕入コスト</th>
+                        <th>純利益</th>
+                        <th>ROI(%)</th>
+                        <th>販売数</th>
+                        <th>平均販売価格</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- 商品別データがここに入る -->
+                    </tbody>
+                  </table>
+                </div>
+                <div class="text-end mt-3">
+                  <button class="btn btn-sm btn-success" onclick="exportFinanceData('product')">
+                    <i class="bi bi-download"></i> CSVエクスポート
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+      // グローバル変数
+      let periodChart = null;
+      let categoryChart = null;
+      let currentPeriodGrouping = 'month';
+      let financeStartDate = null;
+      let financeEndDate = null;
+      
       // 各機能のプレースホルダー関数
       function showProductForm() {
         const modal = new bootstrap.Modal(document.getElementById('productRegisterModal'));
@@ -927,11 +1161,392 @@
       }
 
       function showFinance() {
-        google.script.run.withSuccessHandler(function(result) {
-          // 財務レポートを表示
-        }).getFinanceReport();
+        const modal = new bootstrap.Modal(document.getElementById('financeReportModal'));
+        modal.show();
+        
+        // データ読み込み
+        loadFinanceData();
       }
 
+      // 財務データ読み込み
+      function loadFinanceData() {
+        // 基本財務指標を取得
+        google.script.run
+          .withSuccessHandler(displayFinanceSummary)
+          .withFailureHandler(handleError)
+          .getFinanceReport();
+        
+        // 期間データを取得
+        const startDate = document.getElementById('financeStartDate').value;
+        const endDate = document.getElementById('financeEndDate').value;
+        financeStartDate = startDate;
+        financeEndDate = endDate;
+        
+        google.script.run
+          .withSuccessHandler(displayPeriodData)
+          .withFailureHandler(handleError)
+          .getPeriodSales(startDate, endDate, currentPeriodGrouping);
+        
+        // カテゴリデータを取得
+        google.script.run
+          .withSuccessHandler(function(data) {
+            console.log('カテゴリ別データ受信:', data);
+            displayCategoryData(data);
+          })
+          .withFailureHandler(function(error) {
+            console.error('カテゴリ別データ取得エラー:', error);
+            handleError(error);
+          })
+          .getCategorySales(startDate, endDate);
+        
+        // 商品データを取得
+        google.script.run
+          .withSuccessHandler(displayProductData)
+          .withFailureHandler(handleError)
+          .getProductPerformance(startDate, endDate);
+      }
+      
+      // 基本財務指標表示
+      function displayFinanceSummary(data) {
+        document.getElementById('totalSales').textContent = formatCurrency(data.totalSales);
+        document.getElementById('totalFees').textContent = formatCurrency(data.totalFees);
+        document.getElementById('totalShipping').textContent = formatCurrency(data.totalShipping);
+        document.getElementById('grossProfit').textContent = formatCurrency(data.grossProfit);
+        document.getElementById('totalPurchaseCost').textContent = formatCurrency(data.totalPurchaseCost);
+        document.getElementById('netProfit').textContent = formatCurrency(data.netProfit);
+        document.getElementById('profitMargin').textContent = data.profitMargin + '%';
+        document.getElementById('completedSales').textContent = data.completedSales;
+      }
+      
+      // 期間別データ表示
+      function displayPeriodData(data) {
+        // テーブル更新
+        const tbody = document.querySelector('#periodTable tbody');
+        tbody.innerHTML = '';
+        
+        data.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${item.period}</td>
+            <td>${formatCurrency(item.sales)}</td>
+            <td>${formatCurrency(item.fees)}</td>
+            <td>${formatCurrency(item.shipping)}</td>
+            <td>${formatCurrency(item.profit)}</td>
+            <td>${item.count}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+        
+        // グラフ更新
+        updatePeriodChart(data);
+      }
+      
+      // カテゴリ別データ表示
+      function displayCategoryData(data) {
+        // デバッグ用ログ
+        console.log('カテゴリ別データ表示処理開始:', data);
+        
+        // テーブル更新
+        const tbody = document.querySelector('#categoryTable tbody');
+        tbody.innerHTML = '';
+        
+        if (!data || data.length === 0) {
+          console.log('カテゴリ別データなし');
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center">データがありません</td></tr>';
+          
+          // グラフも初期化
+          if (categoryChart) {
+            categoryChart.destroy();
+            categoryChart = null;
+          }
+          
+          // サンプルデータを表示（データがない場合）
+          const sampleData = [
+            { category: 'その他', sales: 100, profit: 50, count: 1 }
+          ];
+          updateCategoryChart(sampleData);
+          
+          return;
+        }
+        
+        console.log(`カテゴリ別データ: ${data.length}件表示`);
+        
+        data.forEach(item => {
+          console.log(`カテゴリ: ${item.category}, 売上: ${item.sales}, 利益: ${item.profit}, 件数: ${item.count}`);
+          
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${item.category || 'その他'}</td>
+            <td>${formatCurrency(item.sales || 0)}</td>
+            <td>${formatCurrency(item.profit || 0)}</td>
+            <td>${item.count || 0}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+        
+        // グラフ更新
+        updateCategoryChart(data);
+      }
+      
+      // 商品別データ表示
+      function displayProductData(data) {
+        // テーブル更新
+        const tbody = document.querySelector('#productTable tbody');
+        tbody.innerHTML = '';
+        
+        data.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${item.productName}</td>
+            <td>${formatCurrency(item.sales)}</td>
+            <td>${formatCurrency(item.cost)}</td>
+            <td>${formatCurrency(item.netProfit)}</td>
+            <td>${item.roi}%</td>
+            <td>${item.count}</td>
+            <td>${formatCurrency(item.averageSalePrice)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      
+      // 期間グラフ更新
+      function updatePeriodChart(data) {
+        const ctx = document.getElementById('periodChart').getContext('2d');
+        
+        // 既存のチャートがあれば破棄
+        if (periodChart) {
+          periodChart.destroy();
+        }
+        
+        // データ準備
+        const labels = data.map(item => item.period);
+        const salesData = data.map(item => item.sales);
+        const profitData = data.map(item => item.profit);
+        
+        // 新しいチャート作成
+        periodChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: '売上',
+                data: salesData,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+              },
+              {
+                label: '利益',
+                data: profitData,
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      }
+      
+      // カテゴリグラフ更新
+      function updateCategoryChart(data) {
+        console.log('カテゴリグラフ更新開始:', data);
+        
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        
+        // 既存のチャートがあれば破棄
+        if (categoryChart) {
+          categoryChart.destroy();
+          categoryChart = null;
+        }
+        
+        if (!data || data.length === 0) {
+          console.log('グラフ表示用データなし');
+          return;
+        }
+        
+        // データ準備
+        const labels = data.map(item => item.category || 'その他');
+        const salesData = data.map(item => item.sales || 0);
+        
+        console.log('グラフラベル:', labels);
+        console.log('グラフデータ:', salesData);
+        
+        // 色の配列
+        const backgroundColors = [
+          'rgba(255, 99, 132, 0.5)',
+          'rgba(54, 162, 235, 0.5)',
+          'rgba(255, 206, 86, 0.5)',
+          'rgba(75, 192, 192, 0.5)',
+          'rgba(153, 102, 255, 0.5)',
+          'rgba(255, 159, 64, 0.5)',
+          'rgba(199, 199, 199, 0.5)',
+          'rgba(83, 102, 255, 0.5)',
+          'rgba(40, 159, 64, 0.5)',
+          'rgba(210, 199, 199, 0.5)'
+        ];
+        
+        try {
+          // 新しいチャート作成
+          categoryChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+              labels: labels,
+              datasets: [{
+                data: salesData,
+                backgroundColor: backgroundColors.slice(0, labels.length),
+                borderColor: backgroundColors.slice(0, labels.length).map(color => color.replace('0.5', '1')),
+                borderWidth: 1
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: 'right'
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function(context) {
+                      const label = context.label || '';
+                      const value = context.raw;
+                      const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                      const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                      return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                    }
+                  }
+                }
+              }
+            }
+          });
+          
+          console.log('カテゴリグラフ作成完了');
+        } catch (e) {
+          console.error('カテゴリグラフ作成エラー:', e);
+        }
+      }
+      
+      // 期間グループ変更
+      function changePeriodGrouping(groupBy) {
+        currentPeriodGrouping = groupBy;
+        
+        // ボタン状態更新
+        document.querySelectorAll('#period .btn-group button').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        document.querySelector(`#period button[onclick="changePeriodGrouping('${groupBy}')"]`).classList.add('active');
+        
+        // データ再取得
+        google.script.run
+          .withSuccessHandler(displayPeriodData)
+          .withFailureHandler(handleError)
+          .getPeriodSales(financeStartDate, financeEndDate, groupBy);
+      }
+      
+      // フィルター適用
+      function applyFinanceFilter() {
+        const startDate = document.getElementById('financeStartDate').value;
+        const endDate = document.getElementById('financeEndDate').value;
+        
+        console.log('日付フィルター適用:', startDate, '～', endDate);
+        
+        if (!startDate || !endDate) {
+          alert('開始日と終了日を入力してください');
+          return;
+        }
+        
+        if (new Date(startDate) > new Date(endDate)) {
+          alert('開始日は終了日より前の日付を選択してください');
+          return;
+        }
+        
+        financeStartDate = startDate;
+        financeEndDate = endDate;
+        
+        // データ再取得
+        google.script.run
+          .withSuccessHandler(function(data) {
+            console.log('期間別データ取得成功:', data);
+            displayPeriodData(data);
+          })
+          .withFailureHandler(function(error) {
+            console.error('期間別データ取得エラー:', error);
+            handleError(error);
+          })
+          .getPeriodSales(startDate, endDate, currentPeriodGrouping);
+        
+        google.script.run
+          .withSuccessHandler(function(data) {
+            console.log('カテゴリ別データ取得成功:', data);
+            displayCategoryData(data);
+          })
+          .withFailureHandler(function(error) {
+            console.error('カテゴリ別データ取得エラー:', error);
+            handleError(error);
+          })
+          .getCategorySales(startDate, endDate);
+        
+        google.script.run
+          .withSuccessHandler(function(data) {
+            console.log('商品別データ取得成功:', data);
+            displayProductData(data);
+          })
+          .withFailureHandler(function(error) {
+            console.error('商品別データ取得エラー:', error);
+            handleError(error);
+          })
+          .getProductPerformance(startDate, endDate);
+      }
+      
+      // CSVエクスポート
+      function exportFinanceData(reportType) {
+        const startDate = document.getElementById('financeStartDate').value;
+        const endDate = document.getElementById('financeEndDate').value;
+        
+        google.script.run
+          .withSuccessHandler(downloadCsv)
+          .withFailureHandler(handleError)
+          .getFinanceDataAsCsv(reportType, startDate, endDate);
+      }
+      
+      // CSV文字列をダウンロード
+      function downloadCsv(csvString) {
+        // BOMを追加してUTF-8として認識されるようにする
+        const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+        const blob = new Blob([bom, csvString], { type: 'text/csv;charset=utf-8' });
+        
+        // ダウンロードリンク作成
+        const today = new Date().toISOString().slice(0, 10);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `財務レポート_${today}.csv`;
+        
+        // リンクをクリックしてダウンロード開始
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      
+      // 通貨フォーマット
+      function formatCurrency(value) {
+        return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(value);
+      }
+      
+      // エラーハンドラー関数
+      function handleError(error) {
+        console.error('エラーが発生しました:', error);
+        alert('エラーが発生しました: ' + (error.message || error));
+      }
+      
+      // 既存の関数
       function showListingForm() {
         const modal = new bootstrap.Modal(document.getElementById('listingRegisterModal'));
         document.getElementById('listingRegisterForm').reset();
@@ -1417,6 +2032,57 @@
       window.addEventListener('DOMContentLoaded', function() {
         updateDashboard();
       });
+
+      // 初期化
+      document.addEventListener('DOMContentLoaded', function() {
+        // 既存の初期化コード
+        refreshDashboard();
+        loadProductList();
+        loadInventoryList();
+        loadListingList();
+        loadSalesList();
+        loadPurchaseList();
+        
+        // 財務レポートの日付初期化
+        const now = new Date();
+        // 今月の1日
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        // 今月の末日（翌月の0日=今月の末日）
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        document.getElementById('financeStartDate').value = formatDateForInput(firstDay);
+        document.getElementById('financeEndDate').value = formatDateForInput(lastDay);
+      });
+      
+      // 財務レポート表示
+      function showFinanceReport() {
+        const modal = new bootstrap.Modal(document.getElementById('financeReportModal'));
+        
+        // 日付を今月の1日～末日に設定
+        const now = new Date();
+        // 今月の1日
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        // 今月の末日（翌月の0日=今月の末日）
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        document.getElementById('financeStartDate').value = formatDateForInput(firstDay);
+        document.getElementById('financeEndDate').value = formatDateForInput(lastDay);
+        
+        modal.show();
+        
+        // データ読み込み
+        loadFinanceData();
+      }
+      
+      // 日付をinput[type="date"]用にフォーマット (YYYY-MM-DD形式)
+      function formatDateForInput(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
     </script>
   </body>
 </html> 
