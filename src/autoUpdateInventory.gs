@@ -267,7 +267,7 @@ function registerSale(listingId, saleInfo) {
     saleId,
     listingId,
     productId,
-    saleInfo.販売日,
+    Utilities.formatDate(new Date(saleInfo.販売日), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
     saleInfo.販売価格,
     saleInfo.販売手数料,
     saleInfo.送料,
@@ -342,7 +342,7 @@ function registerPurchase(purchase) {
   const rowData = [
     purchaseId,
     purchase.商品ID,
-    purchase.仕入日,
+    Utilities.formatDate(new Date(purchase.仕入日), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
     Number(purchase.仕入数),
     Number(purchase.仕入価格),
     status, // 明示的にstatusを使用
@@ -609,7 +609,7 @@ function getPurchaseList(filterStatus) {
       let cellValue = purchaseData[i][j];
       // 日付オブジェクトであれば、指定のフォーマットで文字列に変換
       if (purchaseHeaders[j] === '仕入日' && cellValue instanceof Date) {
-        cellValue = Utilities.formatDate(cellValue, Session.getScriptTimeZone(), 'yyyy/MM/dd');
+        cellValue = Utilities.formatDate(cellValue, Session.getScriptTimeZone(), 'yyyy/MM/dd HH:mm:ss');
       }
       row[purchaseHeaders[j]] = cellValue;
     }
