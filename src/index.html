@@ -1300,7 +1300,22 @@
         
         // カテゴリタブを明示的に表示
         const categoryTab = document.getElementById('category');
+        
+        // すべてのタブを非表示に
+        document.querySelectorAll('#financeTabContent .tab-pane').forEach(pane => {
+          if (pane.id !== 'category') {
+            pane.style.display = 'none';
+            pane.classList.remove('show');
+            pane.classList.remove('active');
+            console.log(`displayCategoryData: ${pane.id} タブを非表示に設定`);
+          }
+        });
+        
+        // カテゴリタブを表示
         categoryTab.style.display = 'block';
+        categoryTab.classList.add('show');
+        categoryTab.classList.add('active');
+        console.log('displayCategoryData: カテゴリタブを表示に設定');
         
         // テーブル更新 - IDで直接取得
         const tbody = document.getElementById('categoryTableBody');
@@ -1375,7 +1390,7 @@
         const categoryTabDisplay = getComputedStyle(categoryTab).display;
         console.log('カテゴリタブの表示状態:', categoryTabDisplay);
         
-        if (categoryTabDisplay === 'none') {
+        if (categoryTabDisplay !== 'block') {
           console.log('カテゴリタブが非表示なので強制表示します');
           categoryTab.style.display = 'block';
           categoryTab.classList.add('show');
@@ -2143,9 +2158,12 @@
         
         // すべてのタブペインを非表示に初期化
         document.querySelectorAll('#financeTabContent .tab-pane').forEach(pane => {
+          // 明示的にdisplay:noneを設定
+          pane.style.display = 'none';
+          // Bootstrapのクラスも削除
           pane.classList.remove('show');
           pane.classList.remove('active');
-          pane.style.display = 'none';
+          console.log(`初期化: ${pane.id} タブを非表示に設定`);
         });
         
         // 基本指標タブのみ表示
@@ -2153,6 +2171,7 @@
         summaryTab.classList.add('show');
         summaryTab.classList.add('active');
         summaryTab.style.display = 'block';
+        console.log('初期化: summary タブの表示状態:', getComputedStyle(summaryTab).display);
 
         modal.show();
         
@@ -2186,7 +2205,9 @@
         
         // すべてのタブペインを非表示に
         document.querySelectorAll('#financeTabContent .tab-pane').forEach(pane => {
+          // 明示的にdisplay:noneを設定
           pane.style.display = 'none';
+          // Bootstrapのクラスも削除
           pane.classList.remove('show');
           pane.classList.remove('active');
         });
@@ -2195,9 +2216,14 @@
         const activePane = document.getElementById(targetId);
         if (activePane) {
           console.log(`${targetId} タブペインを表示します`);
+          // 明示的にdisplay:blockを設定
           activePane.style.display = 'block';
+          // Bootstrapのクラスも追加
           activePane.classList.add('show');
           activePane.classList.add('active');
+          
+          // デバッグ用：実際にスタイルが適用されているか確認
+          console.log(`${targetId} タブの実際のdisplay状態:`, getComputedStyle(activePane).display);
         }
         
         // カテゴリタブが選択されたときの処理
