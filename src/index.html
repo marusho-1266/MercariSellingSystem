@@ -905,8 +905,8 @@
               <div class="tab-pane" id="category" role="tabpanel" aria-labelledby="category-tab" style="min-height: 400px; width: 100%; position: relative;">
                 <div class="row">
                   <div class="col-12">
-                    <div class="table-responsive">
-                      <table class="table table-sm table-striped table-hover" id="categoryTable">
+                    <div class="table-responsive" style="display: block !important; visibility: visible !important;">
+                      <table class="table table-sm table-striped table-hover" id="categoryTable" style="display: table !important; width: 100% !important;">
                         <thead>
                           <tr>
                             <th>カテゴリ</th>
@@ -1317,6 +1317,21 @@
         categoryTab.classList.add('active');
         console.log('displayCategoryData: カテゴリタブを表示に設定');
         
+        // テーブルコンテナと表を明示的に表示
+        const tableContainer = document.querySelector('#category .table-responsive');
+        if (tableContainer) {
+          tableContainer.style.display = 'block';
+          tableContainer.style.visibility = 'visible';
+          console.log('テーブルコンテナのスタイルを設定:', tableContainer);
+        }
+        
+        const table = document.getElementById('categoryTable');
+        if (table) {
+          table.style.display = 'table';
+          table.style.width = '100%';
+          console.log('テーブルのスタイルを設定:', table);
+        }
+        
         // テーブル更新 - IDで直接取得
         const tbody = document.getElementById('categoryTableBody');
         if (!tbody) {
@@ -1396,6 +1411,17 @@
           categoryTab.classList.add('show');
           categoryTab.classList.add('active');
         }
+        
+        // 最後に再度テーブルが表示されていることを確認
+        setTimeout(() => {
+          const tableVisible = getComputedStyle(table).display;
+          console.log('テーブル表示状態の最終確認:', tableVisible);
+          if (tableVisible === 'none') {
+            console.log('テーブルが非表示なので強制表示します');
+            table.style.display = 'table';
+            table.style.visibility = 'visible';
+          }
+        }, 100);
       }
       
       // 商品別データ表示
@@ -2229,6 +2255,21 @@
         // カテゴリタブが選択されたときの処理
         if (targetId === 'category') {
           console.log('カテゴリタブが選択されました。データを表示します。');
+          
+          // テーブルの表示を確実にする
+          const tableContainer = document.querySelector('#category .table-responsive');
+          if (tableContainer) {
+            tableContainer.style.display = 'block';
+            tableContainer.style.visibility = 'visible';
+            console.log('tabShownHandler: テーブルコンテナのスタイルを設定');
+          }
+          
+          const table = document.getElementById('categoryTable');
+          if (table) {
+            table.style.display = 'table';
+            table.style.width = '100%';
+            console.log('tabShownHandler: テーブルのスタイルを設定');
+          }
           
           // 保存されているデータがあれば再表示
           if (fetchedCategoryData) {
