@@ -902,40 +902,43 @@
               </div>
               
               <!-- カテゴリ別タブ -->
-              <div class="tab-pane" id="category" role="tabpanel" aria-labelledby="category-tab" style="min-height: 400px; width: 100%; position: relative;">
-                <div class="row">
-                  <div class="col-12">
-                    <div class="table-responsive" style="display: block !important; visibility: visible !important;">
-                      <table class="table table-sm table-striped table-hover" id="categoryTable" style="display: table !important; width: 100% !important;">
-                        <thead>
-                          <tr>
-                            <th>カテゴリ</th>
-                            <th>売上</th>
-                            <th>利益</th>
-                            <th>件数</th>
-                            <th>平均販売価格</th>
-                            <th>利益率(%)</th>
-                          </tr>
-                        </thead>
-                        <tbody id="categoryTableBody">
-                          <!-- カテゴリデータがここに入る -->
-                        </tbody>
-                        <tfoot>
-                          <tr class="table-secondary fw-bold">
-                            <td>合計</td>
-                            <td id="categorySalesTotal">-</td>
-                            <td id="categoryProfitTotal">-</td>
-                            <td id="categoryCountTotal">-</td>
-                            <td>-</td>
-                            <td id="categoryProfitRateTotal">-</td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                    <div class="text-end mt-3">
-                      <button class="btn btn-sm btn-success" onclick="exportFinanceData('category')">
-                        <i class="bi bi-download"></i> CSVエクスポート
-                      </button>
+              <div class="tab-pane" id="category" role="tabpanel" aria-labelledby="category-tab" style="min-height: 400px; width: 100%; position: relative; display: block;">
+                <!-- カテゴリデータ表示エリア -->
+                <div id="categoryDataContainer" style="width: 100%; display: block;">
+                  <div class="row">
+                    <div class="col-12">
+                      <div class="table-responsive" style="display: block !important; visibility: visible !important; overflow: visible !important;">
+                        <table class="table table-sm table-striped table-hover" id="categoryTable" style="display: table !important; width: 100% !important; visibility: visible !important;">
+                          <thead>
+                            <tr>
+                              <th>カテゴリ</th>
+                              <th>売上</th>
+                              <th>利益</th>
+                              <th>件数</th>
+                              <th>平均販売価格</th>
+                              <th>利益率(%)</th>
+                            </tr>
+                          </thead>
+                          <tbody id="categoryTableBody">
+                            <!-- カテゴリデータがここに入る -->
+                          </tbody>
+                          <tfoot>
+                            <tr class="table-secondary fw-bold">
+                              <td>合計</td>
+                              <td id="categorySalesTotal">-</td>
+                              <td id="categoryProfitTotal">-</td>
+                              <td id="categoryCountTotal">-</td>
+                              <td>-</td>
+                              <td id="categoryProfitRateTotal">-</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                      <div class="text-end mt-3">
+                        <button class="btn btn-sm btn-success" onclick="exportFinanceData('category')">
+                          <i class="bi bi-download"></i> CSVエクスポート
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1292,136 +1295,138 @@
       
       // カテゴリ別データ表示
       function displayCategoryData(data) {
-        // デバッグ用ログ
-        console.log('カテゴリ別データ表示処理開始:', data);
+        console.log('カテゴリ別データ表示処理開始 - 新方式:', data);
         
         // グローバル変数に保存
         fetchedCategoryData = data;
         
-        // カテゴリタブを明示的に表示
-        const categoryTab = document.getElementById('category');
-        
-        // すべてのタブを非表示に
-        document.querySelectorAll('#financeTabContent .tab-pane').forEach(pane => {
-          if (pane.id !== 'category') {
-            pane.style.display = 'none';
-            pane.classList.remove('show');
-            pane.classList.remove('active');
-            console.log(`displayCategoryData: ${pane.id} タブを非表示に設定`);
+        try {
+          // すべてのタブを非表示に
+          document.querySelectorAll('#financeTabContent .tab-pane').forEach(pane => {
+            if (pane.id !== 'category') {
+              pane.style.display = 'none';
+              pane.classList.remove('show');
+              pane.classList.remove('active');
+            }
+          });
+          
+          // カテゴリタブを表示
+          const categoryTab = document.getElementById('category');
+          if (!categoryTab) {
+            console.error('カテゴリタブ要素が見つかりません');
+            return;
           }
-        });
-        
-        // カテゴリタブを表示
-        categoryTab.style.display = 'block';
-        categoryTab.classList.add('show');
-        categoryTab.classList.add('active');
-        console.log('displayCategoryData: カテゴリタブを表示に設定');
-        
-        // テーブルコンテナと表を明示的に表示
-        const tableContainer = document.querySelector('#category .table-responsive');
-        if (tableContainer) {
-          tableContainer.style.display = 'block';
-          tableContainer.style.visibility = 'visible';
-          console.log('テーブルコンテナのスタイルを設定:', tableContainer);
-        }
-        
-        const table = document.getElementById('categoryTable');
-        if (table) {
-          table.style.display = 'table';
-          table.style.width = '100%';
-          console.log('テーブルのスタイルを設定:', table);
-        }
-        
-        // テーブル更新 - IDで直接取得
-        const tbody = document.getElementById('categoryTableBody');
-        if (!tbody) {
-          console.error('カテゴリテーブルのtbody要素が見つかりません (ID: categoryTableBody)');
-          return;
-        }
-        
-        tbody.innerHTML = '';
-        
-        if (!data || data.length === 0) {
-          console.log('カテゴリ別データなし (displayCategoryData)');
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center">データがありません</td></tr>';
           
-          // 合計行をクリア
-          document.getElementById('categorySalesTotal').textContent = '-';
-          document.getElementById('categoryProfitTotal').textContent = '-';
-          document.getElementById('categoryCountTotal').textContent = '-';
-          document.getElementById('categoryProfitRateTotal').textContent = '-';
-          return;
-        }
-        
-        console.log(`カテゴリ別データ: ${data.length}件表示`);
-        
-        // 合計値を計算
-        let totalSales = 0;
-        let totalProfit = 0;
-        let totalCount = 0;
-        
-        data.forEach(item => {
-          console.log(`カテゴリ: ${item.category}, 売上: ${item.sales}, 利益: ${item.profit}, 件数: ${item.count}`);
-          
-          const sales = item.sales || 0;
-          const profit = item.profit || 0;
-          const count = item.count || 0;
-          
-          // 平均販売価格と利益率を計算
-          const avgPrice = count > 0 ? sales / count : 0;
-          const profitRate = sales > 0 ? (profit / sales) * 100 : 0;
-          
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${item.category || 'その他'}</td>
-            <td>${formatCurrency(sales)}</td>
-            <td>${formatCurrency(profit)}</td>
-            <td>${count}</td>
-            <td>${formatCurrency(avgPrice)}</td>
-            <td>${profitRate.toFixed(1)}%</td>
-          `;
-          tbody.appendChild(tr);
-          
-          // 合計に加算
-          totalSales += sales;
-          totalProfit += profit;
-          totalCount += count;
-        });
-        
-        // 合計行を更新
-        document.getElementById('categorySalesTotal').textContent = formatCurrency(totalSales);
-        document.getElementById('categoryProfitTotal').textContent = formatCurrency(totalProfit);
-        document.getElementById('categoryCountTotal').textContent = totalCount;
-        
-        // 全体の利益率を計算
-        const totalProfitRate = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
-        document.getElementById('categoryProfitRateTotal').textContent = `${totalProfitRate.toFixed(1)}%`;
-        
-        // テーブルの内容を確認
-        console.log('カテゴリテーブルの行数:', tbody.children.length);
-        
-        // タブの表示を確認
-        console.log('displayCategoryData: カテゴリタブの表示状態を確認します');
-        const categoryTabDisplay = getComputedStyle(categoryTab).display;
-        console.log('カテゴリタブの表示状態:', categoryTabDisplay);
-        
-        if (categoryTabDisplay !== 'block') {
-          console.log('カテゴリタブが非表示なので強制表示します');
           categoryTab.style.display = 'block';
           categoryTab.classList.add('show');
           categoryTab.classList.add('active');
-        }
-        
-        // 最後に再度テーブルが表示されていることを確認
-        setTimeout(() => {
-          const tableVisible = getComputedStyle(table).display;
-          console.log('テーブル表示状態の最終確認:', tableVisible);
-          if (tableVisible === 'none') {
-            console.log('テーブルが非表示なので強制表示します');
-            table.style.display = 'table';
-            table.style.visibility = 'visible';
+          
+          // カテゴリタブを選択状態に
+          document.querySelectorAll('#financeTab .nav-link').forEach(link => {
+            link.classList.remove('active');
+            link.setAttribute('aria-selected', 'false');
+          });
+          
+          const categoryTabButton = document.getElementById('category-tab');
+          if (categoryTabButton) {
+            categoryTabButton.classList.add('active');
+            categoryTabButton.setAttribute('aria-selected', 'true');
           }
-        }, 100);
+          
+          // テーブル本体を取得
+          const table = document.getElementById('categoryTable');
+          if (!table) {
+            console.error('カテゴリテーブルが見つかりません');
+            return;
+          }
+          
+          // テーブルを強制表示
+          table.style.cssText = 'display: table !important; width: 100% !important; visibility: visible !important;';
+          
+          // テーブルコンテナを強制表示
+          const tableContainer = table.parentElement;
+          if (tableContainer) {
+            tableContainer.style.cssText = 'display: block !important; visibility: visible !important; overflow: visible !important;';
+          }
+          
+          // tbody要素を取得
+          const tbody = document.getElementById('categoryTableBody');
+          if (!tbody) {
+            console.error('カテゴリテーブルのtbody要素が見つかりません');
+            return;
+          }
+          
+          // テーブルをクリア
+          tbody.innerHTML = '';
+          
+          if (!data || data.length === 0) {
+            console.log('カテゴリ別データなし');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">データがありません</td></tr>';
+            
+            // 合計行をクリア
+            document.getElementById('categorySalesTotal').textContent = '-';
+            document.getElementById('categoryProfitTotal').textContent = '-';
+            document.getElementById('categoryCountTotal').textContent = '-';
+            document.getElementById('categoryProfitRateTotal').textContent = '-';
+            return;
+          }
+          
+          console.log(`カテゴリ別データ: ${data.length}件表示します`);
+          
+          // 合計値の初期化
+          let totalSales = 0;
+          let totalProfit = 0;
+          let totalCount = 0;
+          
+          // データをテーブルに追加
+          data.forEach((item, index) => {
+            console.log(`カテゴリデータ ${index + 1}:`, item);
+            
+            const sales = item.sales || 0;
+            const profit = item.profit || 0;
+            const count = item.count || 0;
+            
+            // 平均販売価格と利益率を計算
+            const avgPrice = count > 0 ? sales / count : 0;
+            const profitRate = sales > 0 ? (profit / sales) * 100 : 0;
+            
+            // 行を作成
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${item.category || 'その他'}</td>
+              <td>${formatCurrency(sales)}</td>
+              <td>${formatCurrency(profit)}</td>
+              <td>${count}</td>
+              <td>${formatCurrency(avgPrice)}</td>
+              <td>${profitRate.toFixed(1)}%</td>
+            `;
+            
+            // 行を追加
+            tbody.appendChild(tr);
+            
+            // 合計に加算
+            totalSales += sales;
+            totalProfit += profit;
+            totalCount += count;
+          });
+          
+          // 合計行を更新
+          document.getElementById('categorySalesTotal').textContent = formatCurrency(totalSales);
+          document.getElementById('categoryProfitTotal').textContent = formatCurrency(totalProfit);
+          document.getElementById('categoryCountTotal').textContent = totalCount;
+          
+          // 全体の利益率を計算
+          const totalProfitRate = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
+          document.getElementById('categoryProfitRateTotal').textContent = `${totalProfitRate.toFixed(1)}%`;
+          
+          console.log('カテゴリテーブルの表示処理が完了しました');
+          console.log('カテゴリタブの表示状態:', getComputedStyle(categoryTab).display);
+          console.log('テーブルの表示状態:', getComputedStyle(table).display);
+          console.log('テーブル行数:', tbody.children.length);
+          
+        } catch (error) {
+          console.error('カテゴリデータ表示中にエラーが発生しました:', error);
+        }
       }
       
       // 商品別データ表示
@@ -2226,70 +2231,127 @@
       
       // タブ切り替えイベントハンドラ（関数として定義して再利用可能に）
       function tabShownHandler(event) {
-        const targetId = event.target.getAttribute('data-bs-target').substring(1);
-        console.log(`タブ切り替え: ${targetId} がアクティブになりました`);
-        
-        // すべてのタブペインを非表示に
-        document.querySelectorAll('#financeTabContent .tab-pane').forEach(pane => {
-          // 明示的にdisplay:noneを設定
-          pane.style.display = 'none';
-          // Bootstrapのクラスも削除
-          pane.classList.remove('show');
-          pane.classList.remove('active');
-        });
-        
-        // クリックされたタブのコンテンツのみを表示
-        const activePane = document.getElementById(targetId);
-        if (activePane) {
-          console.log(`${targetId} タブペインを表示します`);
-          // 明示的にdisplay:blockを設定
-          activePane.style.display = 'block';
-          // Bootstrapのクラスも追加
-          activePane.classList.add('show');
-          activePane.classList.add('active');
+        try {
+          const targetId = event.target.getAttribute('data-bs-target').substring(1);
+          console.log(`タブ切り替え: ${targetId} がアクティブになりました`);
           
-          // デバッグ用：実際にスタイルが適用されているか確認
-          console.log(`${targetId} タブの実際のdisplay状態:`, getComputedStyle(activePane).display);
-        }
-        
-        // カテゴリタブが選択されたときの処理
-        if (targetId === 'category') {
-          console.log('カテゴリタブが選択されました。データを表示します。');
+          // すべてのタブペインを非表示に
+          document.querySelectorAll('#financeTabContent .tab-pane').forEach(pane => {
+            // 明示的にdisplay:noneを設定
+            pane.style.display = 'none';
+            // Bootstrapのクラスも削除
+            pane.classList.remove('show');
+            pane.classList.remove('active');
+          });
           
-          // テーブルの表示を確実にする
-          const tableContainer = document.querySelector('#category .table-responsive');
-          if (tableContainer) {
-            tableContainer.style.display = 'block';
-            tableContainer.style.visibility = 'visible';
-            console.log('tabShownHandler: テーブルコンテナのスタイルを設定');
-          }
-          
-          const table = document.getElementById('categoryTable');
-          if (table) {
-            table.style.display = 'table';
-            table.style.width = '100%';
-            console.log('tabShownHandler: テーブルのスタイルを設定');
-          }
-          
-          // 保存されているデータがあれば再表示
-          if (fetchedCategoryData) {
-            displayCategoryData(fetchedCategoryData);
-          } else {
-            // データがなければ再取得
-            const startDate = document.getElementById('financeStartDate').value;
-            const endDate = document.getElementById('financeEndDate').value;
+          // クリックされたタブのコンテンツのみを表示
+          const activePane = document.getElementById(targetId);
+          if (activePane) {
+            console.log(`${targetId} タブペインを表示します`);
+            // 明示的にdisplay:blockを設定
+            activePane.style.display = 'block';
+            // Bootstrapのクラスも追加
+            activePane.classList.add('show');
+            activePane.classList.add('active');
             
-            google.script.run
-              .withSuccessHandler(function(data) {
-                console.log('カテゴリ別データ取得成功:', data);
-                displayCategoryData(data);
-              })
-              .withFailureHandler(function(error) {
-                console.error('カテゴリ別データ取得エラー:', error);
-                handleError(error);
-              })
-              .getCategorySales(startDate, endDate);
+            // デバッグ用：実際にスタイルが適用されているか確認
+            console.log(`${targetId} タブの実際のdisplay状態:`, getComputedStyle(activePane).display);
           }
+          
+          // カテゴリタブが選択されたときの特別処理
+          if (targetId === 'category') {
+            console.log('カテゴリタブが選択されました - 特別処理を実行します');
+            
+            // 直接HTMLを設定する緊急対策
+            const categoryTab = document.getElementById('category');
+            if (categoryTab) {
+              // カテゴリデータがあればテーブルを再構築
+              if (fetchedCategoryData && fetchedCategoryData.length > 0) {
+                console.log('保存済みのカテゴリデータでテーブルを再構築します');
+                
+                // テーブル本体を取得
+                const table = document.getElementById('categoryTable');
+                if (table) {
+                  // テーブルを強制表示
+                  table.style.cssText = 'display: table !important; width: 100% !important; visibility: visible !important;';
+                  
+                  // テーブルコンテナを強制表示
+                  const tableContainer = table.parentElement;
+                  if (tableContainer) {
+                    tableContainer.style.cssText = 'display: block !important; visibility: visible !important; overflow: visible !important;';
+                  }
+                  
+                  // tbody要素を取得
+                  const tbody = document.getElementById('categoryTableBody');
+                  if (tbody) {
+                    // テーブルをクリア
+                    tbody.innerHTML = '';
+                    
+                    // 合計値の初期化
+                    let totalSales = 0;
+                    let totalProfit = 0;
+                    let totalCount = 0;
+                    
+                    // データをテーブルに追加
+                    fetchedCategoryData.forEach((item, index) => {
+                      const sales = item.sales || 0;
+                      const profit = item.profit || 0;
+                      const count = item.count || 0;
+                      
+                      // 平均販売価格と利益率を計算
+                      const avgPrice = count > 0 ? sales / count : 0;
+                      const profitRate = sales > 0 ? (profit / sales) * 100 : 0;
+                      
+                      // 行を作成
+                      const tr = document.createElement('tr');
+                      tr.innerHTML = `
+                        <td>${item.category || 'その他'}</td>
+                        <td>${formatCurrency(sales)}</td>
+                        <td>${formatCurrency(profit)}</td>
+                        <td>${count}</td>
+                        <td>${formatCurrency(avgPrice)}</td>
+                        <td>${profitRate.toFixed(1)}%</td>
+                      `;
+                      
+                      // 行を追加
+                      tbody.appendChild(tr);
+                      
+                      // 合計に加算
+                      totalSales += sales;
+                      totalProfit += profit;
+                      totalCount += count;
+                    });
+                    
+                    // 合計行を更新
+                    document.getElementById('categorySalesTotal').textContent = formatCurrency(totalSales);
+                    document.getElementById('categoryProfitTotal').textContent = formatCurrency(totalProfit);
+                    document.getElementById('categoryCountTotal').textContent = totalCount;
+                    
+                    // 全体の利益率を計算
+                    const totalProfitRate = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
+                    document.getElementById('categoryProfitRateTotal').textContent = `${totalProfitRate.toFixed(1)}%`;
+                  }
+                }
+              } else {
+                // データがなければ再取得
+                const startDate = document.getElementById('financeStartDate').value;
+                const endDate = document.getElementById('financeEndDate').value;
+                
+                google.script.run
+                  .withSuccessHandler(function(data) {
+                    console.log('カテゴリ別データ取得成功:', data);
+                    displayCategoryData(data);
+                  })
+                  .withFailureHandler(function(error) {
+                    console.error('カテゴリ別データ取得エラー:', error);
+                    handleError(error);
+                  })
+                  .getCategorySales(startDate, endDate);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('タブ切り替え処理中にエラーが発生しました:', error);
         }
       }
       
